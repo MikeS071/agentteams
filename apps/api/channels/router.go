@@ -32,6 +32,12 @@ type OutboundMessage struct {
 	ConversationID string `json:"conversation_id"`
 }
 
+// ChannelAdapter delivers outbound messages for a concrete channel implementation.
+type ChannelAdapter interface {
+	Channel() string
+	Send(ctx context.Context, channel TenantChannel, msg OutboundMessage) error
+}
+
 // Router is the central inbound -> assistant -> outbound channel pipeline.
 type Router struct {
 	db          *sql.DB
