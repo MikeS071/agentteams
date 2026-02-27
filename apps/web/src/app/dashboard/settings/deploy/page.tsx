@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import DeployControls from "./DeployControls";
 
 const PROVIDERS = ["vercel", "supabase"] as const;
 type DeployProvider = (typeof PROVIDERS)[number];
@@ -12,6 +13,18 @@ type ConnectionRow = {
   provider: DeployProvider;
   provider_user_id: string | null;
   connected_at: string | Date;
+};
+
+type DeploymentRow = {
+  status: string;
+  current_step: string | null;
+  steps: Record<string, { status?: string; message?: string; updated_at?: string }> | null;
+  vercel_deployment_url: string | null;
+  vercel_project_url: string | null;
+  supabase_project_url: string | null;
+  custom_domain: string | null;
+  custom_domain_verified: boolean | null;
+  last_error: string | null;
 };
 
 type StatusSearchParams = {
@@ -98,6 +111,40 @@ export default async function DeploySettingsPage({
     connections.set(row.provider, row);
   }
 
+  const deployResult = await pool.query<DeploymentRow>(
+    `SELECT
+      status,
+      current_step,
+      steps,
+      vercel_deployment_url,
+      vercel_project_url,
+      supabase_project_url,
+      custom_domain,
+      custom_domain_verified,
+      last_error
+    FROM tenant_deployments
+    WHERE tenant_id = $1`,
+    [tenantId]
+  );
+
+  const deploymentRow = deployResult.rows[0];
+  const initialStatus = deploymentRow
+    ? {
+        tenant_id: tenantId,
+        status: deploymentRow.status,
+        current_step: deploymentRow.current_step ?? undefined,
+        steps: deploymentRow.steps ?? {},
+        vercel_deployment_url: deploymentRow.vercel_deployment_url ?? undefined,
+        vercel_project_url: deploymentRow.vercel_project_url ?? undefined,
+        supabase_project_url: deploymentRow.supabase_project_url ?? undefined,
+        custom_domain: deploymentRow.custom_domain ?? undefined,
+        custom_domain_verified: deploymentRow.custom_domain_verified ?? false,
+        last_error: deploymentRow.last_error ?? undefined,
+      }
+    : null;
+
+  const canDeploy = PROVIDERS.every((provider) => connections.has(provider));
+
   return (
     <div className="h-full overflow-y-auto bg-[#0a0a0f] px-4 py-6 sm:px-6">
       <div className="mx-auto w-full max-w-4xl space-y-4">
@@ -119,6 +166,8 @@ export default async function DeploySettingsPage({
             OAuth connection failed: {searchParams.error}
           </div>
         ) : null}
+
+        <DeployControls tenantId={tenantId} canDeploy={canDeploy} initialStatus={initialStatus} />
 
         {PROVIDERS.map((provider) => {
           const meta = providerMeta[provider];

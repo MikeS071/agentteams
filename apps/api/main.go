@@ -14,6 +14,7 @@ import (
 
 	"github.com/agentteams/api/channels"
 	"github.com/agentteams/api/coordinator"
+	"github.com/agentteams/api/deploy"
 	"github.com/agentteams/api/llmproxy"
 	"github.com/agentteams/api/orchestrator"
 	"github.com/agentteams/api/terminal"
@@ -262,6 +263,10 @@ func main() {
 	slog.Info("coordinator handler mounted")
 
 	if db != nil {
+		deployPipeline := deploy.NewPipeline(db)
+		deployPipeline.Mount(mux)
+		slog.Info("deploy pipeline mounted")
+
 		mux.Handle("GET /api/tenants/{id}/terminal", terminal.Handler(db))
 		slog.Info("terminal handler mounted")
 	}
