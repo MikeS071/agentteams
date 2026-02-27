@@ -15,7 +15,8 @@
     "next-auth": "4",
     "pg": "^8.19.0",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "stripe": "^20.4.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
