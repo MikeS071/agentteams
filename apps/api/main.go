@@ -1,42 +1,62 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
+	"github.com/agentteams/api/channels"
 	"github.com/agentteams/api/coordinator"
 	"github.com/agentteams/api/llmproxy"
 	"github.com/agentteams/api/orchestrator"
 	"github.com/agentteams/api/terminal"
 
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintln(w, "Hello from AgentTeams API")
 	})
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, `{"status":"ok"}`)
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 
-	// Initialize database connection
 	var db *sql.DB
 	var orch orchestrator.TenantOrchestrator
+	var channelRouter *channels.Router
+	var channelLinks *channels.LinkStore
+
 	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
 		var err error
 		db, err = sql.Open("postgres", dsn)
 		if err != nil {
 			slog.Error("failed to connect to database", "err", err)
 		} else {
+			redisClient := initRedisClient()
+			channelLinks = channels.NewLinkStore(db)
+			channelRouter = channels.NewRouter(db, redisClient)
+
+			if redisClient != nil {
+				fanout := channels.NewFanout(redisClient, channelLinks)
+				go func() {
+					if err := fanout.Start(context.Background()); err != nil {
+						slog.Error("channel fanout stopped", "err", err)
+					}
+				}()
+			}
+
 			orchImpl, err := orchestrator.NewDockerOrchestrator(
 				db,
 				os.Getenv("PLATFORM_API_URL"),
@@ -62,52 +82,173 @@ func main() {
 		slog.Warn("DATABASE_URL not set, LLM proxy and terminal disabled")
 	}
 
+	mux.HandleFunc("POST /api/channels/inbound", func(w http.ResponseWriter, r *http.Request) {
+		if channelRouter == nil {
+			writeAPIError(w, http.StatusServiceUnavailable, "channel router is not configured")
+			return
+		}
+
+		var req struct {
+			TenantID    string            `json:"tenant_id"`
+			TenantIDAlt string            `json:"tenantId"`
+			Content     string            `json:"content"`
+			Channel     string            `json:"channel"`
+			Metadata    map[string]string `json:"metadata"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
+			return
+		}
+
+		tenantID := strings.TrimSpace(req.TenantID)
+		if tenantID == "" {
+			tenantID = strings.TrimSpace(req.TenantIDAlt)
+		}
+
+		out, err := channelRouter.Route(r.Context(), channels.InboundMessage{
+			TenantID: tenantID,
+			Content:  req.Content,
+			Channel:  req.Channel,
+			Metadata: req.Metadata,
+		})
+		if err != nil {
+			status := http.StatusInternalServerError
+			if isInboundValidationError(err) {
+				status = http.StatusBadRequest
+			}
+			writeAPIError(w, status, err.Error())
+			return
+		}
+
+		writeJSON(w, http.StatusOK, out)
+	})
+
+	mux.HandleFunc("GET /api/tenants/{id}/channels", func(w http.ResponseWriter, r *http.Request) {
+		if channelLinks == nil {
+			writeAPIError(w, http.StatusServiceUnavailable, "channel links are not configured")
+			return
+		}
+
+		tenantID := strings.TrimSpace(r.PathValue("id"))
+		if tenantID == "" {
+			writeAPIError(w, http.StatusBadRequest, "missing tenant id")
+			return
+		}
+
+		linked, err := channelLinks.GetChannels(tenantID)
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, "failed to get channels")
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]any{"channels": linked})
+	})
+
+	mux.HandleFunc("POST /api/tenants/{id}/channels", func(w http.ResponseWriter, r *http.Request) {
+		if channelLinks == nil {
+			writeAPIError(w, http.StatusServiceUnavailable, "channel links are not configured")
+			return
+		}
+
+		tenantID := strings.TrimSpace(r.PathValue("id"))
+		if tenantID == "" {
+			writeAPIError(w, http.StatusBadRequest, "missing tenant id")
+			return
+		}
+
+		var req struct {
+			Channel          string `json:"channel"`
+			ChannelUserID    string `json:"channel_user_id"`
+			ChannelUserIDAlt string `json:"channelUserId"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
+			return
+		}
+
+		channelUserID := strings.TrimSpace(req.ChannelUserID)
+		if channelUserID == "" {
+			channelUserID = strings.TrimSpace(req.ChannelUserIDAlt)
+		}
+
+		if err := channelLinks.LinkChannel(tenantID, req.Channel, channelUserID); err != nil {
+			if errors.Is(err, channels.ErrInvalidChannel) {
+				writeAPIError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			writeAPIError(w, http.StatusInternalServerError, "failed to link channel")
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, map[string]string{"status": "linked"})
+	})
+
+	mux.HandleFunc("DELETE /api/tenants/{id}/channels/{channel}", func(w http.ResponseWriter, r *http.Request) {
+		if channelLinks == nil {
+			writeAPIError(w, http.StatusServiceUnavailable, "channel links are not configured")
+			return
+		}
+
+		tenantID := strings.TrimSpace(r.PathValue("id"))
+		channel := strings.TrimSpace(r.PathValue("channel"))
+		if tenantID == "" || channel == "" {
+			writeAPIError(w, http.StatusBadRequest, "missing tenant id or channel")
+			return
+		}
+
+		if err := channelLinks.UnlinkChannel(tenantID, channel); err != nil {
+			if errors.Is(err, channels.ErrInvalidChannel) {
+				writeAPIError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			writeAPIError(w, http.StatusInternalServerError, "failed to unlink channel")
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	mux.HandleFunc("POST /api/tenants/{id}/resume", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil {
-			http.Error(w, `{"error":"database is not configured"}`, http.StatusServiceUnavailable)
+			writeAPIError(w, http.StatusServiceUnavailable, "database is not configured")
 			return
 		}
 		if orch == nil {
-			http.Error(w, `{"error":"orchestrator is not configured"}`, http.StatusServiceUnavailable)
+			writeAPIError(w, http.StatusServiceUnavailable, "orchestrator is not configured")
 			return
 		}
 
 		tenantID := r.PathValue("id")
 		if tenantID == "" {
-			http.Error(w, `{"error":"missing tenant id"}`, http.StatusBadRequest)
+			writeAPIError(w, http.StatusBadRequest, "missing tenant id")
 			return
 		}
 
 		balance, err := llmproxy.CheckCredits(db, tenantID)
 		if err != nil {
 			slog.Error("credit check failed before resume", "tenant", tenantID, "err", err)
-			http.Error(w, `{"error":"billing error"}`, http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError, "billing error")
 			return
 		}
 
 		if balance <= 0 {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusPaymentRequired)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "insufficient credits"})
+			writeAPIError(w, http.StatusPaymentRequired, "insufficient credits")
 			return
 		}
 
 		if err := llmproxy.ResumeTenant(db, orch, tenantID); err != nil {
 			slog.Error("resume tenant failed", "tenant", tenantID, "err", err)
-			http.Error(w, `{"error":"failed to resume tenant"}`, http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError, "failed to resume tenant")
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "active"})
+		writeJSON(w, http.StatusOK, map[string]string{"status": "active"})
 	})
 
-	// Mount swarm coordinator
 	coordHandler := coordinator.NewHandler()
 	coordHandler.Mount(mux)
 	slog.Info("coordinator handler mounted")
 
-	// Mount terminal WebSocket handler
 	if db != nil {
 		mux.Handle("GET /api/tenants/{id}/terminal", terminal.Handler(db))
 		slog.Info("terminal handler mounted")
@@ -115,4 +256,44 @@ func main() {
 
 	log.Println("API server listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
+}
+
+func initRedisClient() *redis.Client {
+	redisURL := strings.TrimSpace(os.Getenv("REDIS_URL"))
+	if redisURL == "" {
+		redisURL = "redis://localhost:6379"
+	}
+
+	opts, err := redis.ParseURL(redisURL)
+	if err != nil {
+		slog.Error("failed to parse REDIS_URL", "redis_url", redisURL, "err", err)
+		return nil
+	}
+
+	client := redis.NewClient(opts)
+	if err := client.Ping(context.Background()).Err(); err != nil {
+		slog.Error("failed to connect to redis", "redis_url", redisURL, "err", err)
+	}
+	return client
+}
+
+func isInboundValidationError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, channels.ErrInvalidChannel) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "required") || strings.Contains(msg, "not found")
+}
+
+func writeJSON(w http.ResponseWriter, status int, payload any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func writeAPIError(w http.ResponseWriter, status int, message string) {
+	writeJSON(w, status, map[string]string{"error": message})
 }
