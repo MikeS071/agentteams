@@ -26,7 +26,7 @@ export default function SignupPage() {
       return;
     }
 
-    await signIn("credentials", { email, password, callbackUrl: "/" });
+    await signIn("credentials", { email, password, callbackUrl: "/dashboard/chat" });
   }
 
   return (
