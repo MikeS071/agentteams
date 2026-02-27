@@ -7,8 +7,12 @@ import LinkedInProvider from "next-auth/providers/linkedin";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import pool from "./db";
+import { getStripe } from "./stripe";
 
-async function findOrCreateTenant(userId: string): Promise<string> {
+async function findOrCreateTenant(
+  userId: string,
+  email?: string | null
+): Promise<string> {
   const existing = await pool.query(
     "SELECT id FROM tenants WHERE user_id = $1",
     [userId]
@@ -28,6 +32,18 @@ async function findOrCreateTenant(userId: string): Promise<string> {
     "INSERT INTO credits (tenant_id, balance_cents, free_credit_used) VALUES ($1, 1000, false)",
     [tenantId]
   );
+
+  if (email) {
+    const stripe = getStripe();
+    const customer = await stripe.customers.create({
+      email,
+      metadata: { tenantId },
+    });
+    await pool.query(
+      "UPDATE users SET stripe_customer_id = $1 WHERE id = $2",
+      [customer.id, userId]
+    );
+  }
 
   return tenantId;
 }
@@ -156,7 +172,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
-        const tenantId = await findOrCreateTenant(user.id);
+        const tenantId = await findOrCreateTenant(user.id, user.email);
         token.tenantId = tenantId;
       }
       return token;
