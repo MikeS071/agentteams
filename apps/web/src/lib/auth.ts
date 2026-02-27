@@ -48,6 +48,14 @@ async function findOrCreateTenant(
   return tenantId;
 }
 
+async function getUserRole(userId: string): Promise<"user" | "admin" | "disabled"> {
+  const result = await pool.query<{ role: "user" | "admin" | "disabled" }>(
+    "SELECT role FROM users WHERE id = $1",
+    [userId]
+  );
+  return result.rows[0]?.role ?? "user";
+}
+
 async function linkAccount(account: {
   userId: string;
   type: string;
@@ -117,17 +125,23 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
         const res = await pool.query(
-          "SELECT id, email, name, image, password_hash FROM users WHERE email = $1",
+          "SELECT id, email, name, image, password_hash, role FROM users WHERE email = $1",
           [credentials.email]
         );
         const user = res.rows[0];
-        if (!user || !user.password_hash) return null;
+        if (!user || !user.password_hash || user.role === "disabled") return null;
         const valid = await bcrypt.compare(
           credentials.password,
           user.password_hash
         );
         if (!valid) return null;
-        return { id: user.id, email: user.email, name: user.name, image: user.image };
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+          role: user.role,
+        };
       },
     }),
   ],
@@ -146,11 +160,17 @@ export const authOptions: NextAuthOptions = {
           userId = existing.rows[0].id;
         } else {
           const inserted = await pool.query(
-            "INSERT INTO users (email, name, image, email_verified) VALUES ($1, $2, $3, NOW()) RETURNING id",
+            "INSERT INTO users (email, name, image, email_verified, role) VALUES ($1, $2, $3, NOW(), 'user') RETURNING id",
             [user.email, user.name ?? null, user.image ?? null]
           );
           userId = inserted.rows[0].id;
         }
+
+        const role = await getUserRole(userId);
+        if (role === "disabled") {
+          return false;
+        }
+
         user.id = userId;
         await linkAccount({
           userId,
@@ -169,11 +189,32 @@ export const authOptions: NextAuthOptions = {
 
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && token.role === "admin") {
+        const updatedSession = session as { impersonatedTenantId?: string | null } | undefined;
+        const targetTenantId = updatedSession?.impersonatedTenantId;
+
+        if (!targetTenantId) {
+          token.tenantId = token.homeTenantId;
+          token.impersonatedTenantId = null;
+          return token;
+        }
+
+        const tenant = await pool.query("SELECT id FROM tenants WHERE id = $1", [targetTenantId]);
+        if (tenant.rows.length > 0) {
+          token.tenantId = targetTenantId;
+          token.impersonatedTenantId = targetTenantId;
+        }
+        return token;
+      }
+
       if (user) {
         token.userId = user.id;
         const tenantId = await findOrCreateTenant(user.id, user.email);
         token.tenantId = tenantId;
+        token.homeTenantId = tenantId;
+        token.role = await getUserRole(user.id);
+        token.impersonatedTenantId = null;
       }
       return token;
     },
@@ -181,6 +222,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as Record<string, unknown>).id = token.userId;
         (session.user as Record<string, unknown>).tenantId = token.tenantId;
+        (session.user as Record<string, unknown>).role = token.role;
+        (session.user as Record<string, unknown>).impersonatedTenantId =
+          token.impersonatedTenantId ?? null;
       }
       return session;
     },

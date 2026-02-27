@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import DashboardUserMenu from "@/components/DashboardUserMenu";
+import AdminImpersonationBanner from "@/components/admin/AdminImpersonationBanner";
 
 const navItems = [
   { href: "/dashboard/chat", label: "Chat" },
@@ -75,6 +76,7 @@ export default async function DashboardLayout({
             image={session.user.image}
           />
         </header>
+        <AdminImpersonationBanner />
         <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
