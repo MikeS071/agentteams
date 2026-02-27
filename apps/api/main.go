@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/agentteams/api/coordinator"
 	"github.com/agentteams/api/llmproxy"
 	"github.com/agentteams/api/terminal"
 
@@ -45,6 +46,11 @@ func main() {
 	} else {
 		slog.Warn("DATABASE_URL not set, LLM proxy and terminal disabled")
 	}
+
+	// Mount swarm coordinator
+	coordHandler := coordinator.NewHandler()
+	coordHandler.Mount(mux)
+	slog.Info("coordinator handler mounted")
 
 	// Mount terminal WebSocket handler
 	if db != nil {
