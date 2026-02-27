@@ -1,0 +1,27 @@
+id = "social-campaign"
+name = "Social Campaign"
+description = "Build channel-ready social campaign plans for target audiences."
+
+[[steps]]
+name = "Select Target Platform"
+type = "action"
+description = "Choose channel, campaign objective, and target audience."
+action_command = "select_social_platform"
+
+[[steps]]
+name = "Brand Safety Check"
+type = "condition"
+description = "Validate messaging against brand and compliance standards."
+action_command = "check_brand_safety"
+
+[[steps]]
+name = "Generate Draft Content"
+type = "action"
+description = "Produce platform-specific content and creative prompts."
+action_command = "generate_campaign_content"
+
+[[steps]]
+name = "Approve Campaign"
+type = "confirm"
+description = "Confirm campaign assets before scheduling."
+action_command = "confirm_campaign_launch"

@@ -5,19 +5,27 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // Handler exposes workflow endpoints over HTTP.
 type Handler struct {
-	runner *Runner
+	runner        *Runner
+	templateStore *TemplateStore
 }
 
 func NewHandler(runner *Runner) *Handler {
-	return &Handler{runner: runner}
+	return &Handler{
+		runner:        runner,
+		templateStore: NewTemplateStore(DefaultTemplatesDir()),
+	}
 }
 
 func (h *Handler) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/workflows", h.handleList)
+	mux.HandleFunc("GET /api/workflows/templates", h.handleListTemplates)
+	mux.HandleFunc("POST /api/workflows/templates", h.handleSaveTemplate)
+	mux.HandleFunc("GET /api/workflows/templates/{name}", h.handleGetTemplate)
 	mux.HandleFunc("POST /api/workflows/{id}/start", h.handleStart)
 	mux.HandleFunc("POST /api/workflows/runs/{runID}/step", h.handleStep)
 	mux.HandleFunc("POST /api/workflows/runs/{runID}/confirm", h.handleConfirm)
@@ -27,6 +35,58 @@ func (h *Handler) Mount(mux *http.ServeMux) {
 func (h *Handler) handleList(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"workflows": h.runner.ListWorkflows(),
+	})
+}
+
+func (h *Handler) handleListTemplates(w http.ResponseWriter, _ *http.Request) {
+	templates, err := h.templateStore.List()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list templates")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"templates": templates,
+	})
+}
+
+func (h *Handler) handleGetTemplate(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimSpace(r.PathValue("name"))
+	if name == "" {
+		writeError(w, http.StatusBadRequest, "missing template name")
+		return
+	}
+
+	template, err := h.templateStore.Get(name)
+	if err != nil {
+		if errors.Is(err, ErrTemplateNotFound) {
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to get template")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"template": template,
+	})
+}
+
+func (h *Handler) handleSaveTemplate(w http.ResponseWriter, r *http.Request) {
+	var template Template
+	if err := json.NewDecoder(r.Body).Decode(&template); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	savedTemplate, err := h.templateStore.Save(template)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"template": savedTemplate,
 	})
 }
 

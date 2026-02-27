@@ -1,0 +1,27 @@
+id = "data-pipeline-orchestration"
+name = "Data Pipeline Orchestration"
+description = "Coordinate ingestion, transformations, and quality gates for data jobs."
+
+[[steps]]
+name = "Ingest Source Data"
+type = "action"
+description = "Load source datasets from configured connectors."
+action_command = "ingest_source_data"
+
+[[steps]]
+name = "Validate Schema Drift"
+type = "condition"
+description = "Check for schema changes and route incompatible payloads."
+action_command = "detect_schema_drift"
+
+[[steps]]
+name = "Run Transformations"
+type = "action"
+description = "Execute transformation jobs for normalized models."
+action_command = "run_transform_jobs"
+
+[[steps]]
+name = "Promote to Production"
+type = "confirm"
+description = "Confirm quality checks pass before promoting outputs."
+action_command = "confirm_pipeline_promotion"

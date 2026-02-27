@@ -1,0 +1,27 @@
+id = "incident-response-runbook"
+name = "Incident Response Runbook"
+description = "Coordinate triage, mitigation, and communication during incidents."
+
+[[steps]]
+name = "Classify Severity"
+type = "condition"
+description = "Classify incident impact to choose escalation path."
+action_command = "classify_incident_severity"
+
+[[steps]]
+name = "Execute Mitigation"
+type = "action"
+description = "Apply containment and mitigation actions for active impact."
+action_command = "execute_mitigation_plan"
+
+[[steps]]
+name = "Notify Stakeholders"
+type = "action"
+description = "Send status updates to internal and external stakeholders."
+action_command = "broadcast_incident_updates"
+
+[[steps]]
+name = "Resolve Incident"
+type = "confirm"
+description = "Confirm service health and close the incident timeline."
+action_command = "confirm_incident_resolution"

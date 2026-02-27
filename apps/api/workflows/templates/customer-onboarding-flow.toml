@@ -1,0 +1,27 @@
+id = "customer-onboarding-flow"
+name = "Customer Onboarding Flow"
+description = "Guide new customers from signup through activation and first value."
+
+[[steps]]
+name = "Collect Account Context"
+type = "action"
+description = "Capture customer goals, team size, and success criteria."
+action_command = "collect_customer_context"
+
+[[steps]]
+name = "Provision Workspace"
+type = "action"
+description = "Create workspace, assign owner permissions, and configure defaults."
+action_command = "provision_workspace"
+
+[[steps]]
+name = "Needs Security Review"
+type = "condition"
+description = "Determine whether the customer requires an enterprise security review."
+action_command = "evaluate_security_requirements"
+
+[[steps]]
+name = "Confirm Go-Live"
+type = "confirm"
+description = "Get final approval before enabling production access."
+action_command = "confirm_onboarding_go_live"

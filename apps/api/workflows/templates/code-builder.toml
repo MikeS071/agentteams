@@ -1,0 +1,27 @@
+id = "code-builder"
+name = "Code Builder"
+description = "Plan and implement coding tasks with clear checkpoints."
+
+[[steps]]
+name = "Define Implementation Goal"
+type = "action"
+description = "Capture objective, constraints, and acceptance criteria."
+action_command = "define_goal"
+
+[[steps]]
+name = "Assess Complexity"
+type = "condition"
+description = "Determine if task needs targeted fix, feature work, or refactor."
+action_command = "assess_complexity"
+
+[[steps]]
+name = "Implement Changes"
+type = "action"
+description = "Apply code changes and run required validation commands."
+action_command = "implement_changes"
+
+[[steps]]
+name = "Ship Patch"
+type = "confirm"
+description = "Confirm implementation is complete and ready to ship."
+action_command = "confirm_patch_release"

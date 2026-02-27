@@ -1,0 +1,27 @@
+id = "code-review-pipeline"
+name = "Code Review Pipeline"
+description = "Standardize review gates from PR creation to merge readiness."
+
+[[steps]]
+name = "Run Static Checks"
+type = "action"
+description = "Execute linting and static analysis on changed files."
+action_command = "run_static_checks"
+
+[[steps]]
+name = "Validate Test Coverage"
+type = "condition"
+description = "Verify required tests exist and coverage thresholds are met."
+action_command = "check_test_coverage"
+
+[[steps]]
+name = "Assign Reviewers"
+type = "action"
+description = "Route the pull request to domain owners and backup reviewers."
+action_command = "assign_reviewers"
+
+[[steps]]
+name = "Merge Approval"
+type = "confirm"
+description = "Confirm all blockers are resolved before merge."
+action_command = "confirm_merge_ready"

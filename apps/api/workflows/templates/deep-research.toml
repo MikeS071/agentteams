@@ -1,0 +1,27 @@
+id = "deep-research"
+name = "Deep Research"
+description = "Perform structured research and produce a findings report."
+
+[[steps]]
+name = "Scope Research Topic"
+type = "action"
+description = "Define research question, assumptions, and boundaries."
+action_command = "scope_research_topic"
+
+[[steps]]
+name = "Need Primary Sources"
+type = "condition"
+description = "Check if claims require direct primary-source verification."
+action_command = "evaluate_source_requirements"
+
+[[steps]]
+name = "Synthesize Findings"
+type = "action"
+description = "Summarize evidence with key insights and caveats."
+action_command = "synthesize_findings"
+
+[[steps]]
+name = "Finalize Report"
+type = "confirm"
+description = "Confirm final report format and delivery."
+action_command = "confirm_report_delivery"

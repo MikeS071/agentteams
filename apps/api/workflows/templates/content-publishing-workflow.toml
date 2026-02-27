@@ -1,0 +1,27 @@
+id = "content-publishing-workflow"
+name = "Content Publishing Workflow"
+description = "Move content from draft to scheduled publication with approvals."
+
+[[steps]]
+name = "Draft Outline"
+type = "action"
+description = "Create content outline with audience, angle, and CTA."
+action_command = "create_content_outline"
+
+[[steps]]
+name = "Editorial Standards Check"
+type = "condition"
+description = "Ensure tone, style, and compliance rules are satisfied."
+action_command = "validate_editorial_standards"
+
+[[steps]]
+name = "Prepare Distribution"
+type = "action"
+description = "Generate channel-specific snippets and scheduling metadata."
+action_command = "prepare_distribution_assets"
+
+[[steps]]
+name = "Approve Publication"
+type = "confirm"
+description = "Approve final content for publication."
+action_command = "confirm_content_publication"
