@@ -13,16 +13,30 @@ import (
 
 // Fanout subscribes to tenant response topics and relays responses to linked channels.
 type Fanout struct {
-	redis *redis.Client
-	links *LinkStore
-	log   *slog.Logger
+	redis    *redis.Client
+	links    *LinkStore
+	log      *slog.Logger
+	adapters map[string]ChannelAdapter
 }
 
-func NewFanout(redisClient *redis.Client, links *LinkStore) *Fanout {
+func NewFanout(redisClient *redis.Client, links *LinkStore, adapters ...ChannelAdapter) *Fanout {
+	adapterMap := make(map[string]ChannelAdapter, len(adapters))
+	for _, adapter := range adapters {
+		if adapter == nil {
+			continue
+		}
+		channel := strings.TrimSpace(adapter.Channel())
+		if channel == "" {
+			continue
+		}
+		adapterMap[channel] = adapter
+	}
+
 	return &Fanout{
-		redis: redisClient,
-		links: links,
-		log:   slog.Default().With("component", "channels.fanout"),
+		redis:    redisClient,
+		links:    links,
+		log:      slog.Default().With("component", "channels.fanout"),
+		adapters: adapterMap,
 	}
 }
 
@@ -82,6 +96,12 @@ func (f *Fanout) fanout(ctx context.Context, out OutboundMessage) error {
 			payload := FormatForTelegram(out)
 			f.sendTelegram(ctx, channel, payload)
 		case "whatsapp":
+			if adapter, ok := f.adapters["whatsapp"]; ok {
+				if err := adapter.Send(ctx, channel, out); err != nil {
+					f.log.Error("whatsapp send failed", "tenant", channel.TenantID, "err", err)
+				}
+				continue
+			}
 			payload := FormatForWhatsApp(out)
 			f.sendWhatsApp(ctx, channel, payload)
 		default:

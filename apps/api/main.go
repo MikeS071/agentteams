@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/agentteams/api/channels"
+	"github.com/agentteams/api/channels/adapters"
 	"github.com/agentteams/api/coordinator"
 	"github.com/agentteams/api/llmproxy"
 	"github.com/agentteams/api/orchestrator"
@@ -49,6 +50,7 @@ func main() {
 	var orch orchestrator.TenantOrchestrator
 	var channelRouter *channels.Router
 	var channelLinks *channels.LinkStore
+	var whatsappAdapter *adapters.WhatsAppAdapter
 
 	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
 		var err error
@@ -59,9 +61,10 @@ func main() {
 			redisClient := initRedisClient()
 			channelLinks = channels.NewLinkStore(db)
 			channelRouter = channels.NewRouter(db, redisClient)
+			whatsappAdapter = adapters.NewWhatsAppAdapter(db, channelRouter, channelLinks)
 
 			if redisClient != nil {
-				fanout := channels.NewFanout(redisClient, channelLinks)
+				fanout := channels.NewFanout(redisClient, channelLinks, whatsappAdapter)
 				go func() {
 					if err := fanout.Start(context.Background()); err != nil {
 						slog.Error("channel fanout stopped", "err", err)
@@ -133,6 +136,67 @@ func main() {
 		}
 
 		writeJSON(w, http.StatusOK, out)
+	})
+
+	mux.HandleFunc("/api/channels/whatsapp/webhook", func(w http.ResponseWriter, r *http.Request) {
+		if whatsappAdapter == nil {
+			writeAPIError(w, http.StatusServiceUnavailable, "whatsapp adapter is not configured")
+			return
+		}
+		whatsappAdapter.HandleWebhook(w, r)
+	})
+
+	mux.HandleFunc("POST /api/channels/whatsapp/connect", func(w http.ResponseWriter, r *http.Request) {
+		if whatsappAdapter == nil {
+			writeAPIError(w, http.StatusServiceUnavailable, "whatsapp adapter is not configured")
+			return
+		}
+
+		var req struct {
+			TenantID       string `json:"tenant_id"`
+			TenantIDAlt    string `json:"tenantId"`
+			PhoneNumberID  string `json:"phone_number_id"`
+			PhoneNumberAlt string `json:"phoneNumberId"`
+			AccessToken    string `json:"access_token"`
+			AccessTokenAlt string `json:"accessToken"`
+			VerifyToken    string `json:"verify_token"`
+			VerifyTokenAlt string `json:"verifyToken"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
+			return
+		}
+
+		tenantID := strings.TrimSpace(req.TenantID)
+		if tenantID == "" {
+			tenantID = strings.TrimSpace(req.TenantIDAlt)
+		}
+
+		phoneNumberID := strings.TrimSpace(req.PhoneNumberID)
+		if phoneNumberID == "" {
+			phoneNumberID = strings.TrimSpace(req.PhoneNumberAlt)
+		}
+
+		accessToken := strings.TrimSpace(req.AccessToken)
+		if accessToken == "" {
+			accessToken = strings.TrimSpace(req.AccessTokenAlt)
+		}
+
+		verifyToken := strings.TrimSpace(req.VerifyToken)
+		if verifyToken == "" {
+			verifyToken = strings.TrimSpace(req.VerifyTokenAlt)
+		}
+
+		if err := whatsappAdapter.Connect(r.Context(), tenantID, phoneNumberID, accessToken, verifyToken); err != nil {
+			status := http.StatusInternalServerError
+			if isInboundValidationError(err) {
+				status = http.StatusBadRequest
+			}
+			writeAPIError(w, status, err.Error())
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, map[string]string{"status": "connected"})
 	})
 
 	mux.HandleFunc("GET /api/tenants/{id}/channels", func(w http.ResponseWriter, r *http.Request) {
