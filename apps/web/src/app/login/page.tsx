@@ -24,7 +24,7 @@ export default function LoginPage() {
       email,
       password,
       redirect: true,
-      callbackUrl: "/",
+      callbackUrl: "/dashboard/chat",
     });
     if (res?.error) setError("Invalid email or password");
   }
@@ -38,7 +38,7 @@ export default function LoginPage() {
           {oauthProviders.map((p) => (
             <button
               key={p.id}
-              onClick={() => signIn(p.id, { callbackUrl: "/" })}
+              onClick={() => signIn(p.id, { callbackUrl: "/dashboard/chat" })}
               className={`w-full rounded-lg px-4 py-2.5 font-medium transition-opacity hover:opacity-90 ${p.bg}`}
             >
               Continue with {p.label}

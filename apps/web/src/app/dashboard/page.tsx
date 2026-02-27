@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function DashboardPage() {
-  redirect("/dashboard/usage");
+export default function DashboardIndexPage() {
+  redirect("/dashboard/chat");
 }
