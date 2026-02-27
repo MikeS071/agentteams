@@ -16,6 +16,14 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// ChannelAdapter bridges channel-specific webhook parsing and outbound delivery.
+type ChannelAdapter interface {
+	Channel() string
+	VerifyWebhook(r *http.Request, expectedSecret string) error
+	ParseWebhook(ctx context.Context, tenantID string, payload []byte) ([]InboundMessage, error)
+	Send(ctx context.Context, linkedChannel TenantChannel, msg OutboundMessage) error
+}
+
 // InboundMessage is a normalized message payload entering the channel router.
 type InboundMessage struct {
 	TenantID string            `json:"tenant_id"`
@@ -26,10 +34,11 @@ type InboundMessage struct {
 
 // OutboundMessage is the assistant response returned by the channel router.
 type OutboundMessage struct {
-	TenantID       string `json:"tenant_id"`
-	Content        string `json:"content"`
-	Channel        string `json:"channel"`
-	ConversationID string `json:"conversation_id"`
+	TenantID       string            `json:"tenant_id"`
+	Content        string            `json:"content"`
+	Channel        string            `json:"channel"`
+	ConversationID string            `json:"conversation_id"`
+	Metadata       map[string]string `json:"metadata,omitempty"`
 }
 
 // Router is the central inbound -> assistant -> outbound channel pipeline.
