@@ -13,16 +13,26 @@ import (
 
 // Fanout subscribes to tenant response topics and relays responses to linked channels.
 type Fanout struct {
-	redis *redis.Client
-	links *LinkStore
-	log   *slog.Logger
+	redis    *redis.Client
+	links    *LinkStore
+	adapters map[string]ChannelAdapter
+	log      *slog.Logger
 }
 
-func NewFanout(redisClient *redis.Client, links *LinkStore) *Fanout {
+func NewFanout(redisClient *redis.Client, links *LinkStore, channelAdapters ...ChannelAdapter) *Fanout {
+	adapterMap := make(map[string]ChannelAdapter, len(channelAdapters))
+	for _, adapter := range channelAdapters {
+		if adapter == nil {
+			continue
+		}
+		adapterMap[adapter.Channel()] = adapter
+	}
+
 	return &Fanout{
-		redis: redisClient,
-		links: links,
-		log:   slog.Default().With("component", "channels.fanout"),
+		redis:    redisClient,
+		links:    links,
+		adapters: adapterMap,
+		log:      slog.Default().With("component", "channels.fanout"),
 	}
 }
 
@@ -79,8 +89,14 @@ func (f *Fanout) fanout(ctx context.Context, out OutboundMessage) error {
 		case "web":
 			_ = FormatForWeb(out)
 		case "telegram":
-			payload := FormatForTelegram(out)
-			f.sendTelegram(ctx, channel, payload)
+			adapter, ok := f.adapters["telegram"]
+			if !ok {
+				f.log.Warn("telegram adapter is not configured", "tenant", channel.TenantID)
+				continue
+			}
+			if err := adapter.Send(ctx, channel, out); err != nil {
+				f.log.Error("telegram send failed", "tenant", channel.TenantID, "err", err)
+			}
 		case "whatsapp":
 			payload := FormatForWhatsApp(out)
 			f.sendWhatsApp(ctx, channel, payload)
@@ -113,10 +129,6 @@ func FormatForTelegram(msg OutboundMessage) string {
 
 func FormatForWhatsApp(msg OutboundMessage) string {
 	return msg.Content
-}
-
-func (f *Fanout) sendTelegram(_ context.Context, channel TenantChannel, payload string) {
-	f.log.Info("would send to telegram", "tenant", channel.TenantID, "channel_user_id", channel.ChannelUserID, "payload", payload)
 }
 
 func (f *Fanout) sendWhatsApp(_ context.Context, channel TenantChannel, payload string) {

@@ -16,8 +16,19 @@ type TenantChannel struct {
 	TenantID      string    `json:"tenant_id"`
 	Channel       string    `json:"channel"`
 	ChannelUserID string    `json:"channel_user_id,omitempty"`
+	BotUsername   string    `json:"bot_username,omitempty"`
 	LinkedAt      time.Time `json:"linked_at"`
 	Muted         bool      `json:"muted"`
+}
+
+// TelegramChannelConfig is tenant-level telegram configuration.
+type TelegramChannelConfig struct {
+	TenantID          string
+	ChannelUserID     string
+	BotTokenEncrypted string
+	WebhookSecret     string
+	BotUsername       string
+	BotID             int64
 }
 
 // LinkStore manages tenant channel links.
@@ -80,7 +91,7 @@ func (s *LinkStore) GetChannels(tenantID string) ([]TenantChannel, error) {
 	}
 
 	rows, err := s.db.Query(
-		`SELECT id, tenant_id, channel, channel_user_id, linked_at, muted
+		`SELECT id, tenant_id, channel, channel_user_id, COALESCE(bot_username, ''), linked_at, muted
 		 FROM tenant_channels
 		 WHERE tenant_id = $1
 		 ORDER BY linked_at ASC`,
@@ -95,7 +106,7 @@ func (s *LinkStore) GetChannels(tenantID string) ([]TenantChannel, error) {
 	for rows.Next() {
 		var ch TenantChannel
 		var channelUserID sql.NullString
-		if err := rows.Scan(&ch.ID, &ch.TenantID, &ch.Channel, &channelUserID, &ch.LinkedAt, &ch.Muted); err != nil {
+		if err := rows.Scan(&ch.ID, &ch.TenantID, &ch.Channel, &channelUserID, &ch.BotUsername, &ch.LinkedAt, &ch.Muted); err != nil {
 			return nil, fmt.Errorf("scan channel: %w", err)
 		}
 		if channelUserID.Valid {
@@ -108,6 +119,124 @@ func (s *LinkStore) GetChannels(tenantID string) ([]TenantChannel, error) {
 		return nil, fmt.Errorf("iterate channels: %w", err)
 	}
 	return result, nil
+}
+
+// UpsertTelegramConfig links telegram channel and stores credential metadata for a tenant.
+func (s *LinkStore) UpsertTelegramConfig(tenantID, encryptedBotToken, webhookSecret, botUsername string, botID int64) error {
+	if strings.TrimSpace(tenantID) == "" {
+		return errors.New("tenant id is required")
+	}
+	if strings.TrimSpace(encryptedBotToken) == "" {
+		return errors.New("encrypted bot token is required")
+	}
+	if strings.TrimSpace(webhookSecret) == "" {
+		return errors.New("webhook secret is required")
+	}
+
+	_, err := s.db.Exec(
+		`INSERT INTO tenant_channels (
+		   tenant_id, channel, bot_token_encrypted, webhook_secret, bot_username, bot_id, muted
+		 )
+		 VALUES ($1, 'telegram', $2, $3, NULLIF($4, ''), $5, FALSE)
+		 ON CONFLICT (tenant_id, channel)
+		 DO UPDATE
+		 SET bot_token_encrypted = EXCLUDED.bot_token_encrypted,
+		     webhook_secret = EXCLUDED.webhook_secret,
+		     bot_username = EXCLUDED.bot_username,
+		     bot_id = EXCLUDED.bot_id,
+		     muted = FALSE,
+		     linked_at = NOW()`,
+		tenantID,
+		strings.TrimSpace(encryptedBotToken),
+		strings.TrimSpace(webhookSecret),
+		strings.TrimSpace(botUsername),
+		botID,
+	)
+	if err != nil {
+		return fmt.Errorf("upsert telegram config: %w", err)
+	}
+	return nil
+}
+
+// GetTelegramConfigByTenant returns telegram configuration for a tenant.
+func (s *LinkStore) GetTelegramConfigByTenant(tenantID string) (TelegramChannelConfig, error) {
+	if strings.TrimSpace(tenantID) == "" {
+		return TelegramChannelConfig{}, errors.New("tenant id is required")
+	}
+
+	var cfg TelegramChannelConfig
+	var channelUserID sql.NullString
+	var botUsername sql.NullString
+	err := s.db.QueryRow(
+		`SELECT tenant_id,
+		        channel_user_id,
+		        bot_token_encrypted,
+		        webhook_secret,
+		        bot_username,
+		        COALESCE(bot_id, 0)
+		 FROM tenant_channels
+		 WHERE tenant_id = $1 AND channel = 'telegram'`,
+		tenantID,
+	).Scan(
+		&cfg.TenantID,
+		&channelUserID,
+		&cfg.BotTokenEncrypted,
+		&cfg.WebhookSecret,
+		&botUsername,
+		&cfg.BotID,
+	)
+	if err != nil {
+		return TelegramChannelConfig{}, fmt.Errorf("get telegram config by tenant: %w", err)
+	}
+
+	if channelUserID.Valid {
+		cfg.ChannelUserID = channelUserID.String
+	}
+	if botUsername.Valid {
+		cfg.BotUsername = botUsername.String
+	}
+	return cfg, nil
+}
+
+// GetTelegramConfigByWebhookSecret returns telegram configuration using webhook secret lookup.
+func (s *LinkStore) GetTelegramConfigByWebhookSecret(secret string) (TelegramChannelConfig, error) {
+	secret = strings.TrimSpace(secret)
+	if secret == "" {
+		return TelegramChannelConfig{}, errors.New("webhook secret is required")
+	}
+
+	var cfg TelegramChannelConfig
+	var channelUserID sql.NullString
+	var botUsername sql.NullString
+	err := s.db.QueryRow(
+		`SELECT tenant_id,
+		        channel_user_id,
+		        bot_token_encrypted,
+		        webhook_secret,
+		        bot_username,
+		        COALESCE(bot_id, 0)
+		 FROM tenant_channels
+		 WHERE channel = 'telegram' AND webhook_secret = $1`,
+		secret,
+	).Scan(
+		&cfg.TenantID,
+		&channelUserID,
+		&cfg.BotTokenEncrypted,
+		&cfg.WebhookSecret,
+		&botUsername,
+		&cfg.BotID,
+	)
+	if err != nil {
+		return TelegramChannelConfig{}, fmt.Errorf("get telegram config by webhook secret: %w", err)
+	}
+
+	if channelUserID.Valid {
+		cfg.ChannelUserID = channelUserID.String
+	}
+	if botUsername.Valid {
+		cfg.BotUsername = botUsername.String
+	}
+	return cfg, nil
 }
 
 func normalizeChannel(channel string) (string, error) {
