@@ -1,0 +1,11 @@
+services:
+  tenant-test:
+    build: .
+    ports:
+      - "4200:4200"
+    environment:
+      TENANT_ID: "test-tenant-001"
+      PLATFORM_API_URL: "http://host.docker.internal:3000/api"
+      LLM_PROXY_URL: "http://host.docker.internal:8090"
+    volumes:
+      - ./test-workspace:/workspace
