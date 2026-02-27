@@ -11,19 +11,23 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/agentteams/api/orchestrator"
 )
 
 // Proxy is the LLM proxy handler.
 type Proxy struct {
 	DB       *sql.DB
+	Orch     orchestrator.TenantOrchestrator
 	Registry *ModelRegistry
 	Client   *http.Client
 }
 
 // NewProxy creates a new LLM proxy.
-func NewProxy(db *sql.DB, reg *ModelRegistry) *Proxy {
+func NewProxy(db *sql.DB, reg *ModelRegistry, orch orchestrator.TenantOrchestrator) *Proxy {
 	return &Proxy{
 		DB:       db,
+		Orch:     orch,
 		Registry: reg,
 		Client:   &http.Client{Timeout: 120 * time.Second},
 	}
@@ -37,11 +41,11 @@ func (p *Proxy) Mount(mux *http.ServeMux) {
 
 // OpenAI-compatible request/response types.
 type chatRequest struct {
-	Model       string           `json:"model"`
-	Messages    []chatMessage    `json:"messages"`
-	Temperature *float64         `json:"temperature,omitempty"`
-	MaxTokens   *int             `json:"max_tokens,omitempty"`
-	Stream      bool             `json:"stream,omitempty"`
+	Model       string        `json:"model"`
+	Messages    []chatMessage `json:"messages"`
+	Temperature *float64      `json:"temperature,omitempty"`
+	MaxTokens   *int          `json:"max_tokens,omitempty"`
+	Stream      bool          `json:"stream,omitempty"`
 }
 
 type chatMessage struct {
@@ -136,6 +140,17 @@ func (p *Proxy) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	if err := BillUsage(p.DB, tenantID, model.ID, inputTokens, outputTokens, costCents); err != nil {
 		slog.Error("billing failed", "err", err)
 		// Still return the response — billing is best-effort
+	} else {
+		remainingBalance, err := CheckCredits(p.DB, tenantID)
+		if err != nil {
+			slog.Error("post-billing credit check failed", "tenant", tenantID, "err", err)
+		} else if remainingBalance <= 0 {
+			if err := PauseTenant(p.DB, p.Orch, tenantID); err != nil {
+				slog.Error("tenant auto-pause failed", "tenant", tenantID, "err", err)
+			} else {
+				slog.Info(fmt.Sprintf("tenant %s auto-paused: credits exhausted", tenantID))
+			}
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
