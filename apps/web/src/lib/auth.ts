@@ -1,0 +1,173 @@
+import type { NextAuthOptions } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
+import FacebookProvider from "next-auth/providers/facebook";
+import TwitterProvider from "next-auth/providers/twitter";
+import LinkedInProvider from "next-auth/providers/linkedin";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import pool from "./db";
+
+async function findOrCreateTenant(userId: string): Promise<string> {
+  const existing = await pool.query(
+    "SELECT id FROM tenants WHERE user_id = $1",
+    [userId]
+  );
+  if (existing.rows.length > 0) {
+    return existing.rows[0].id;
+  }
+
+  const tenant = await pool.query(
+    "INSERT INTO tenants (user_id, status) VALUES ($1, 'active') RETURNING id",
+    [userId]
+  );
+  const tenantId = tenant.rows[0].id;
+
+  // Free tier signup bonus: store as 1000 cents ($10 equivalent)
+  await pool.query(
+    "INSERT INTO credits (tenant_id, balance_cents, free_credit_used) VALUES ($1, 1000, false)",
+    [tenantId]
+  );
+
+  return tenantId;
+}
+
+async function linkAccount(account: {
+  userId: string;
+  type: string;
+  provider: string;
+  providerAccountId: string;
+  refresh_token?: string | null;
+  access_token?: string | null;
+  expires_at?: number | null;
+  token_type?: string | null;
+  scope?: string | null;
+  id_token?: string | null;
+  session_state?: string | null;
+}) {
+  await pool.query(
+    `INSERT INTO accounts (user_id, type, provider, provider_account_id, refresh_token, access_token, expires_at, token_type, scope, id_token, session_state)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+     ON CONFLICT (provider, provider_account_id) DO NOTHING`,
+    [
+      account.userId,
+      account.type,
+      account.provider,
+      account.providerAccountId,
+      account.refresh_token ?? null,
+      account.access_token ?? null,
+      account.expires_at ?? null,
+      account.token_type ?? null,
+      account.scope ?? null,
+      account.id_token ?? null,
+      account.session_state ?? null,
+    ]
+  );
+}
+
+export const authOptions: NextAuthOptions = {
+  session: { strategy: "jwt" },
+  pages: {
+    signIn: "/login",
+  },
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    }),
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_CLIENT_ID!,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+    }),
+    TwitterProvider({
+      clientId: process.env.TWITTER_CLIENT_ID!,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET!,
+      version: "2.0",
+    }),
+    LinkedInProvider({
+      clientId: process.env.LINKEDIN_CLIENT_ID!,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
+    }),
+    CredentialsProvider({
+      name: "Email",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+        const res = await pool.query(
+          "SELECT id, email, name, image, password_hash FROM users WHERE email = $1",
+          [credentials.email]
+        );
+        const user = res.rows[0];
+        if (!user || !user.password_hash) return null;
+        const valid = await bcrypt.compare(
+          credentials.password,
+          user.password_hash
+        );
+        if (!valid) return null;
+        return { id: user.id, email: user.email, name: user.name, image: user.image };
+      },
+    }),
+  ],
+  callbacks: {
+    async signIn({ user, account }) {
+      if (!user.email) return false;
+
+      // Upsert user for OAuth providers
+      if (account && account.type === "oauth") {
+        const existing = await pool.query(
+          "SELECT id FROM users WHERE email = $1",
+          [user.email]
+        );
+        let userId: string;
+        if (existing.rows.length > 0) {
+          userId = existing.rows[0].id;
+        } else {
+          const inserted = await pool.query(
+            "INSERT INTO users (email, name, image, email_verified) VALUES ($1, $2, $3, NOW()) RETURNING id",
+            [user.email, user.name ?? null, user.image ?? null]
+          );
+          userId = inserted.rows[0].id;
+        }
+        user.id = userId;
+        await linkAccount({
+          userId,
+          type: account.type,
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
+          refresh_token: account.refresh_token,
+          access_token: account.access_token,
+          expires_at: account.expires_at,
+          token_type: account.token_type,
+          scope: account.scope,
+          id_token: account.id_token,
+          session_state: account.session_state as string | undefined,
+        });
+      }
+
+      return true;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.userId = user.id;
+        const tenantId = await findOrCreateTenant(user.id);
+        token.tenantId = tenantId;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as Record<string, unknown>).id = token.userId;
+        (session.user as Record<string, unknown>).tenantId = token.tenantId;
+      }
+      return session;
+    },
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+};
