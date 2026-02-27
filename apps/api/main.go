@@ -17,6 +17,7 @@ import (
 	"github.com/agentteams/api/llmproxy"
 	"github.com/agentteams/api/orchestrator"
 	"github.com/agentteams/api/terminal"
+	"github.com/agentteams/api/workflows"
 
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
@@ -33,6 +34,17 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 
+	workflowDefs, workflowDir, err := workflows.LoadWorkflowsFromDefaultPaths()
+	if err != nil {
+		slog.Error("failed to load workflow templates", "err", err)
+	} else {
+		workflowRunner := workflows.NewRunner(workflowDefs)
+		workflowHandler := workflows.NewHandler(workflowRunner)
+		workflowHandler.Mount(mux)
+		slog.Info("workflow handler mounted", "dir", workflowDir, "count", len(workflowDefs))
+	}
+
+	// Initialize database connection
 	var db *sql.DB
 	var orch orchestrator.TenantOrchestrator
 	var channelRouter *channels.Router
