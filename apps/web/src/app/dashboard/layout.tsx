@@ -7,6 +7,7 @@ import DashboardUserMenu from "@/components/DashboardUserMenu";
 const navItems = [
   { href: "/dashboard/chat", label: "Chat" },
   { href: "/dashboard/usage", label: "Usage" },
+  { href: "/dashboard/workflows", label: "Workflows" },
 ];
 
 const settingsItems = [
