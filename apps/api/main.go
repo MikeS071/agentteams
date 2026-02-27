@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/agentteams/api/llmproxy"
+	"github.com/agentteams/api/terminal"
 
 	_ "github.com/lib/pq"
 )
@@ -24,9 +25,11 @@ func main() {
 		fmt.Fprintln(w, `{"status":"ok"}`)
 	})
 
-	// Initialize LLM proxy if DATABASE_URL is set
+	// Initialize database connection
+	var db *sql.DB
 	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
-		db, err := sql.Open("postgres", dsn)
+		var err error
+		db, err = sql.Open("postgres", dsn)
 		if err != nil {
 			slog.Error("failed to connect to database", "err", err)
 		} else {
@@ -40,7 +43,13 @@ func main() {
 			}
 		}
 	} else {
-		slog.Warn("DATABASE_URL not set, LLM proxy disabled")
+		slog.Warn("DATABASE_URL not set, LLM proxy and terminal disabled")
+	}
+
+	// Mount terminal WebSocket handler
+	if db != nil {
+		mux.Handle("GET /api/tenants/{id}/terminal", terminal.Handler(db))
+		slog.Info("terminal handler mounted")
 	}
 
 	log.Println("API server listening on :8080")

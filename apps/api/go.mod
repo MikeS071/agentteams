@@ -4,6 +4,8 @@ go 1.24.0
 
 require (
 	github.com/docker/docker v28.5.2+incompatible
+	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/lib/pq v1.11.2
 )
 
