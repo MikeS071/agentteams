@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { encrypt } from "@/lib/crypto";
+
+export const dynamic = "force-dynamic";
+
+function getBaseUrl(request: NextRequest): string {
+  return process.env.NEXTAUTH_URL?.replace(/\/$/, "") ?? request.nextUrl.origin;
+}
+
+export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  const tenantId = session?.user?.tenantId;
+
+  if (!tenantId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const clientId = process.env.SUPABASE_CLIENT_ID;
+  if (!clientId) {
+    return NextResponse.json({ error: "SUPABASE_CLIENT_ID is not configured" }, { status: 500 });
+  }
+
+  const redirectUri = `${getBaseUrl(request)}/api/deploy/supabase/callback`;
+  const state = encrypt(
+    JSON.stringify({
+      tenantId,
+      provider: "supabase",
+      issuedAt: Date.now(),
+    })
+  );
+
+  const authorizeUrl = new URL("https://api.supabase.com/v1/oauth/authorize");
+  authorizeUrl.searchParams.set("client_id", clientId);
+  authorizeUrl.searchParams.set("redirect_uri", redirectUri);
+  authorizeUrl.searchParams.set("response_type", "code");
+  authorizeUrl.searchParams.set("state", state);
+
+  return NextResponse.redirect(authorizeUrl);
+}

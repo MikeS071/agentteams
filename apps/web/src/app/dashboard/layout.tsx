@@ -7,7 +7,11 @@ import DashboardUserMenu from "@/components/DashboardUserMenu";
 const navItems = [
   { href: "/dashboard/chat", label: "Chat" },
   { href: "/dashboard/usage", label: "Usage" },
-  { href: "/dashboard/settings", label: "Settings" },
+];
+
+const settingsItems = [
+  { href: "/dashboard/settings", label: "General" },
+  { href: "/dashboard/settings/deploy", label: "Deploy" },
 ];
 
 export default async function DashboardLayout({
@@ -26,15 +30,22 @@ export default async function DashboardLayout({
       <aside className="hidden w-56 shrink-0 flex-col border-r border-[#1d1d2c] bg-[#0d0d14] md:flex">
         <div className="border-b border-[#1d1d2c] px-5 py-4 text-lg font-semibold text-[#a29bfe]">AgentTeams</div>
         <nav className="flex flex-col gap-1 p-3">
+          <p className="px-3 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Workspace</p>
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`rounded-lg px-3 py-2 text-sm ${
-                item.href === "/dashboard/chat"
-                  ? "bg-[#171726] text-[#a29bfe]"
-                  : "text-gray-400 hover:bg-[#131320] hover:text-gray-200"
-              }`}
+              className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:bg-[#131320] hover:text-gray-200"
+            >
+              {item.label}
+            </Link>
+          ))}
+          <p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Settings</p>
+          {settingsItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:bg-[#131320] hover:text-gray-200"
             >
               {item.label}
             </Link>
@@ -46,11 +57,11 @@ export default async function DashboardLayout({
         <header className="flex h-16 items-center justify-between border-b border-[#1d1d2c] bg-[#0d0d14] px-4 sm:px-6">
           <div className="md:hidden">
             <nav className="flex gap-3 text-sm">
-              {navItems.map((item) => (
+              {[...navItems, ...settingsItems].map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={item.href === "/dashboard/chat" ? "text-[#a29bfe]" : "text-gray-400"}
+                  className="text-gray-400"
                 >
                   {item.label}
                 </Link>
