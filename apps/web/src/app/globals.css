@@ -13,7 +13,17 @@
   --text2: #a0a0b8;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text);
+  background-image: radial-gradient(
+      circle at 20% 10%,
+      rgba(108, 92, 231, 0.12),
+      transparent 32%
+    ),
+    radial-gradient(circle at 82% 2%, rgba(0, 206, 201, 0.1), transparent 28%);
 }
