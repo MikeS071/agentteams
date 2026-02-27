@@ -1,0 +1,36 @@
+id = "social"
+name = "Social Campaign"
+description = "Create social content tailored to platform and audience"
+icon = "📣"
+cost_hint = "low"
+
+[[steps]]
+id = "platform"
+type = "choice"
+prompt = "Which platform should this content target?"
+options = ["X / Twitter", "LinkedIn", "Instagram", "TikTok"]
+default = "LinkedIn"
+
+[[steps]]
+id = "objective"
+type = "text"
+prompt = "What is the campaign objective?"
+help = "Examples: launch announcement, lead generation, engagement"
+
+[[steps]]
+id = "audience"
+type = "text"
+prompt = "Who is the target audience?"
+help = "Describe role, niche, and level of familiarity"
+
+[[steps]]
+id = "tone"
+type = "choice"
+prompt = "What tone should be used?"
+options = ["Professional", "Friendly", "Bold and energetic", "Educational"]
+default = "Professional"
+
+[[steps]]
+id = "confirm"
+type = "confirm"
+prompt = "Ready to draft the content plan?"

@@ -1,0 +1,30 @@
+id = "research"
+name = "Deep Research"
+description = "Research any topic in depth"
+icon = "🔬"
+cost_hint = "medium"
+
+[[steps]]
+id = "topic"
+type = "text"
+prompt = "What topic would you like me to research?"
+help = "Be as specific as possible for better results"
+
+[[steps]]
+id = "depth"
+type = "choice"
+prompt = "How deep should the research go?"
+options = ["Quick overview (5 min)", "Detailed analysis (15 min)", "Comprehensive report (30 min)"]
+default = "Detailed analysis (15 min)"
+
+[[steps]]
+id = "format"
+type = "choice"
+prompt = "Output format?"
+options = ["Summary with bullet points", "Full report with sections", "Q&A format"]
+default = "Full report with sections"
+
+[[steps]]
+id = "confirm"
+type = "confirm"
+prompt = "Ready to start research?"
