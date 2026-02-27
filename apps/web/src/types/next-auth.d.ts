@@ -6,6 +6,8 @@ declare module "next-auth" {
     user: {
       id: string;
       tenantId: string;
+      role: "user" | "admin" | "disabled";
+      impersonatedTenantId?: string | null;
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -17,5 +19,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     userId: string;
     tenantId: string;
+    homeTenantId: string;
+    role: "user" | "admin" | "disabled";
+    impersonatedTenantId?: string | null;
   }
 }
