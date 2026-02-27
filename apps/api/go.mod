@@ -3,6 +3,7 @@ module github.com/agentteams/api
 go 1.24.0
 
 require (
+	github.com/BurntSushi/toml v1.4.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3

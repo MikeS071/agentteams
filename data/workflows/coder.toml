@@ -1,0 +1,36 @@
+id = "coder"
+name = "Code Builder"
+description = "Plan and implement a coding task with clear constraints"
+icon = "🛠️"
+cost_hint = "high"
+
+[[steps]]
+id = "goal"
+type = "text"
+prompt = "What should be built or fixed?"
+help = "Include expected behavior and success criteria"
+
+[[steps]]
+id = "codebase"
+type = "text"
+prompt = "What codebase context should I use?"
+help = "Mention key files, packages, or architecture constraints"
+
+[[steps]]
+id = "scope"
+type = "choice"
+prompt = "How broad should implementation be?"
+options = ["Targeted fix", "Feature with tests", "Full refactor with cleanup"]
+default = "Feature with tests"
+
+[[steps]]
+id = "validation"
+type = "choice"
+prompt = "What validation should be required before completion?"
+options = ["Build only", "Build + lint", "Build + lint + tests"]
+default = "Build + lint + tests"
+
+[[steps]]
+id = "confirm"
+type = "confirm"
+prompt = "Ready to start coding?"
