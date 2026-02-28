@@ -115,12 +115,13 @@ export default function ChatPage() {
     }
   }
 
-  function handleAgentStart(context: string) {
+  function handleAgentStart(values: Record<string, string>) {
     setShowSetup(false);
     setConversationId(undefined);
+    const firstMsg = selectedAgent.buildFirstMessage(values);
     setMessages([{ role: "assistant", content: selectedAgent.welcomeMessage }]);
     router.replace("/dashboard/chat");
-    void handleSend(context);
+    if (firstMsg) void handleSend(firstMsg);
   }
 
   function handleNewChat() {
