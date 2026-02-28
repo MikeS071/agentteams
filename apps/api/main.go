@@ -272,6 +272,9 @@ func main() {
 	coordHandler.Mount(mux)
 	slog.Info("coordinator handler mounted")
 
+	mountHandsProxyRoutes(mux)
+	slog.Info("hands proxy routes mounted")
+
 	if db != nil {
 		mux.Handle("GET /api/tenants/{id}/terminal", terminal.Handler(db))
 		slog.Info("terminal handler mounted")
