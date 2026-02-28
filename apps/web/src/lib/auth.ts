@@ -46,12 +46,111 @@ async function linkAccount(account: {
   );
 }
 
-async function readIsAdmin(userId: string): Promise<boolean> {
-  const result = await pool.query<{ is_admin: boolean }>(
-    "SELECT is_admin FROM users WHERE id = $1",
+type UserFlagsRow = {
+  is_admin: boolean;
+  onboarding_completed_at: string | null;
+};
+
+async function readUserFlags(userId: string): Promise<{
+  isAdmin: boolean;
+  onboardingCompleted: boolean;
+}> {
+  const result = await pool.query<UserFlagsRow>(
+    "SELECT is_admin, onboarding_completed_at FROM users WHERE id = $1",
     [userId]
   );
-  return result.rows[0]?.is_admin ?? false;
+  const row = result.rows[0];
+  return {
+    isAdmin: row?.is_admin ?? false,
+    onboardingCompleted: Boolean(row?.onboarding_completed_at),
+  };
+}
+
+type UserWithTenantId = User & { tenantId?: string };
+
+type UserStatusRow = {
+  suspended_at: string | null;
+  deleted_at: string | null;
+};
+
+type CredentialUserRow = {
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | null;
+  password_hash: string | null;
+  suspended_at: string | null;
+  deleted_at: string | null;
+};
+
+async function ensureAuthUserIsActive(userId: string): Promise<boolean> {
+  const result = await pool.query<UserStatusRow>(
+    "SELECT suspended_at, deleted_at FROM users WHERE id = $1",
+    [userId]
+  );
+
+  if (result.rows.length === 0) {
+    return false;
+  }
+
+  const row = result.rows[0];
+  return !row.suspended_at && !row.deleted_at;
+}
+
+async function upsertOAuthUser(user: User): Promise<string | null> {
+  if (!user.email) {
+    return null;
+  }
+
+  const email = normalizeEmail(user.email);
+  if (!email) {
+    return null;
+  }
+
+  const existing = await pool.query<{
+    id: string;
+    suspended_at: string | null;
+    deleted_at: string | null;
+  }>(
+    "SELECT id, suspended_at, deleted_at FROM users WHERE email = $1",
+    [email]
+  );
+
+  if (existing.rows.length > 0) {
+    const row = existing.rows[0];
+    if (row.suspended_at || row.deleted_at) {
+      return null;
+    }
+    await pool.query(
+      "UPDATE users SET name = COALESCE($1, name), image = COALESCE($2, image), email_verified = COALESCE(email_verified, NOW()) WHERE id = $3",
+      [user.name ?? null, user.image ?? null, row.id]
+    );
+    return row.id;
+  }
+
+  const inserted = await pool.query<{ id: string }>(
+    "INSERT INTO users (email, name, image, email_verified) VALUES ($1, $2, $3, NOW()) RETURNING id",
+    [email, user.name ?? null, user.image ?? null]
+  );
+  return inserted.rows[0].id;
+}
+
+async function ensureUserTenantSetup(
+  userId: string,
+  email?: string | null
+): Promise<string> {
+  const { tenantId, created } = await ensureTenantRecord(userId);
+  await ensureTenantCredits(tenantId);
+
+  if (email) {
+    await ensureStripeCustomer(userId, email);
+  }
+
+  if (created) {
+    await provisionTenantContainer(tenantId);
+  }
+
+  return tenantId;
 }
 
 type UserWithTenantId = User & { tenantId?: string };
@@ -256,9 +355,12 @@ export const authOptions: NextAuthOptions = {
       }
 
       if (token.userId) {
-        token.isAdmin = await readIsAdmin(token.userId);
+        const flags = await readUserFlags(token.userId);
+        token.isAdmin = flags.isAdmin;
+        token.onboardingCompleted = flags.onboardingCompleted;
       } else {
         token.isAdmin = false;
+        token.onboardingCompleted = false;
       }
       return token;
     },
@@ -268,6 +370,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as Record<string, unknown>).tenantId = token.tenantId;
         (session.user as Record<string, unknown>).isAdmin =
           token.isAdmin ?? false;
+        (session.user as Record<string, unknown>).onboardingCompleted =
+          token.onboardingCompleted ?? false;
       }
       return session;
     },

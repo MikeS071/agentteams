@@ -7,6 +7,7 @@ declare module "next-auth" {
       id: string;
       tenantId: string;
       isAdmin: boolean;
+      onboardingCompleted: boolean;
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -19,5 +20,6 @@ declare module "next-auth/jwt" {
     userId: string;
     tenantId: string;
     isAdmin: boolean;
+    onboardingCompleted: boolean;
   }
 }
