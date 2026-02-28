@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       message: z.string().trim().min(1).max(4000),
       model: z.string().optional(),
       agentId: z.string().optional(),
-      systemPrompt: z.string().max(2000).optional(),
+      systemPrompt: z.string().max(8000).optional(),
     })
   );
   if (!parsed.success) {
