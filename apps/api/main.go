@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -112,7 +113,7 @@ func main() {
 			Channel     string            `json:"channel"`
 			Metadata    map[string]string `json:"metadata"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		if err := decodeJSONStrict(r, &req); err != nil {
 			writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 			return
 		}
@@ -188,6 +189,10 @@ func main() {
 		channelUserID := strings.TrimSpace(req.ChannelUserID)
 		if channelUserID == "" {
 			channelUserID = strings.TrimSpace(req.ChannelUserIDAlt)
+		}
+		if channelUserID == "" {
+			writeAPIError(w, http.StatusBadRequest, "channel user id is required")
+			return
 		}
 
 		if err := channelLinks.LinkChannel(tenantID, req.Channel, channelUserID); err != nil {
@@ -273,7 +278,8 @@ func main() {
 	}
 
 	log.Println("API server listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	handler := applyRequestBodyLimit(applyAuth(mux))
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
 func initRedisClient() *redis.Client {
@@ -321,4 +327,16 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 
 func writeAPIError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
+}
+
+func decodeJSONStrict(r *http.Request, dest any) error {
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(dest); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return errors.New("request body must contain a single JSON object")
+	}
+	return nil
 }

@@ -120,6 +120,9 @@ func (b *Bridge) classifyWithLLM(ctx context.Context, req channels.AgentTaskRequ
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("X-Tenant-ID", req.TenantID)
+	if serviceKey := strings.TrimSpace(os.Getenv("SERVICE_API_KEY")); serviceKey != "" {
+		httpReq.Header.Set("X-Service-API-Key", serviceKey)
+	}
 
 	resp, err := b.httpClient.Do(httpReq)
 	if err != nil {

@@ -1,36 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAdminSession } from "@/lib/adminAuth";
 import { assertValidMarkup, softDeleteAdminModel, updateAdminModel } from "@/lib/adminModels";
+import { verifyMutationOrigin } from "@/lib/security";
+import { parseJSONBody, parseWithSchema } from "@/lib/validation";
 
-type PatchBody = {
-  markupPct?: unknown;
-  enabled?: unknown;
-};
+const idSchema = z.object({ id: z.string().trim().min(1).max(120) });
+const patchSchema = z
+  .object({
+    markupPct: z.number().min(0).max(500).optional(),
+    enabled: z.boolean().optional(),
+  })
+  .refine((value) => value.markupPct !== undefined || value.enabled !== undefined, {
+    message: "At least one field must be provided",
+  });
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const originError = verifyMutationOrigin(request);
+    if (originError) {
+      return originError;
+    }
+
+    const parsedParams = parseWithSchema(params, idSchema, "Invalid model id");
+    if (!parsedParams.success) {
+      return parsedParams.response;
+    }
+
     const admin = await requireAdminSession();
     if (!admin.ok) {
       return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
-    const body = (await request.json()) as PatchBody;
+    const parsedBody = await parseJSONBody(request, patchSchema);
+    if (!parsedBody.success) {
+      return parsedBody.response;
+    }
+    const body = parsedBody.data;
     const patch: { markupPct?: number; enabled?: boolean } = {};
 
     if (body.markupPct !== undefined) {
-      const markupPct = Number(body.markupPct);
-      assertValidMarkup(markupPct);
-      patch.markupPct = markupPct;
+      assertValidMarkup(body.markupPct);
+      patch.markupPct = body.markupPct;
     }
 
     if (body.enabled !== undefined) {
       patch.enabled = Boolean(body.enabled);
     }
 
-    const model = await updateAdminModel(params.id, patch);
+    const model = await updateAdminModel(parsedParams.data.id, patch);
     return NextResponse.json({ model });
   } catch (error) {
     if (error instanceof Error) {
@@ -43,16 +64,26 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const originError = verifyMutationOrigin(request);
+    if (originError) {
+      return originError;
+    }
+
+    const parsedParams = parseWithSchema(params, idSchema, "Invalid model id");
+    if (!parsedParams.success) {
+      return parsedParams.response;
+    }
+
     const admin = await requireAdminSession();
     if (!admin.ok) {
       return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
-    await softDeleteAdminModel(params.id);
+    await softDeleteAdminModel(parsedParams.data.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof Error) {

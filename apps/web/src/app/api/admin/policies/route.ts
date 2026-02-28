@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAdminApiSession } from "@/lib/admin";
 import { FEATURES, isFeature, type Feature } from "@/lib/features";
 import {
@@ -6,13 +7,8 @@ import {
   setFeaturePolicyForAllTenants,
   setTenantFeaturePolicy,
 } from "@/lib/feature-policies";
-
-type PatchBody = {
-  tenantId?: string;
-  feature?: string;
-  enabled?: boolean;
-  allTenants?: boolean;
-};
+import { verifyMutationOrigin } from "@/lib/security";
+import { parseJSONBody, parseWithSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +18,15 @@ export async function GET(request: NextRequest) {
     return auth.response;
   }
 
-  const search = request.nextUrl.searchParams.get("search") ?? "";
+  const parsedQuery = parseWithSchema(
+    { search: request.nextUrl.searchParams.get("search") ?? "" },
+    z.object({ search: z.string().max(200) }),
+    "Invalid query params"
+  );
+  if (!parsedQuery.success) {
+    return parsedQuery.response;
+  }
+  const search = parsedQuery.data.search;
   const tenants = await listTenantPolicies(search);
 
   return NextResponse.json({
@@ -32,17 +36,29 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const originError = verifyMutationOrigin(request);
+  if (originError) {
+    return originError;
+  }
+
   const auth = await requireAdminApiSession();
   if ("response" in auth) {
     return auth.response;
   }
 
-  let body: PatchBody;
-  try {
-    body = (await request.json()) as PatchBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  const parsedBody = await parseJSONBody(
+    request,
+    z.object({
+      tenantId: z.string().uuid().optional(),
+      feature: z.string(),
+      enabled: z.boolean(),
+      allTenants: z.boolean().optional(),
+    })
+  );
+  if (!parsedBody.success) {
+    return parsedBody.response;
   }
+  const body = parsedBody.data;
 
   const rawFeature = body.feature;
   if (!rawFeature || !isFeature(rawFeature)) {

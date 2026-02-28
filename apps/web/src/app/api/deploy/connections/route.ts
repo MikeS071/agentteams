@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
 import { checkFeatureAccess } from "@/lib/feature-policies";
+import { verifyMutationOrigin } from "@/lib/security";
+import { parseJSONBody, parseWithSchema } from "@/lib/validation";
 
 const DEPLOY_PROVIDERS = ["vercel", "supabase"] as const;
 type DeployProvider = (typeof DEPLOY_PROVIDERS)[number];
@@ -14,10 +17,6 @@ type ConnectionRow = {
 };
 
 export const dynamic = "force-dynamic";
-
-function isDeployProvider(value: string | null): value is DeployProvider {
-  return !!value && DEPLOY_PROVIDERS.includes(value as DeployProvider);
-}
 
 async function getTenantIdFromSession(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -61,6 +60,11 @@ export async function GET() {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const originError = verifyMutationOrigin(request);
+    if (originError) {
+      return originError;
+    }
+
     const tenantId = await getTenantIdFromSession();
     if (!tenantId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -73,17 +77,28 @@ export async function DELETE(request: NextRequest) {
     let provider = request.nextUrl.searchParams.get("provider");
 
     if (!provider) {
-      try {
-        const body = (await request.json()) as { provider?: string };
-        provider = body.provider ?? null;
-      } catch {
-        provider = null;
+      const parsedBody = await parseJSONBody(
+        request,
+        z.object({
+          provider: z.string(),
+        })
+      );
+      if (parsedBody.success) {
+        provider = parsedBody.data.provider;
       }
     }
 
-    if (!isDeployProvider(provider)) {
+    const parsedProvider = parseWithSchema(
+      { provider },
+      z.object({
+        provider: z.enum(DEPLOY_PROVIDERS),
+      }),
+      "Invalid provider"
+    );
+    if (!parsedProvider.success) {
       return NextResponse.json({ error: "Invalid provider" }, { status: 400 });
     }
+    provider = parsedProvider.data.provider;
 
     await pool.query(
       `DELETE FROM deploy_connections

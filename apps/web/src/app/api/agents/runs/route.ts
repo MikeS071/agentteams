@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { buildServiceHeaders } from "@/lib/security";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,6 +19,9 @@ export async function GET() {
     const res = await fetch(`${apiBaseURL}/api/tenants/${session.user.tenantId}/swarm/runs`, {
       method: "GET",
       cache: "no-store",
+      headers: {
+        ...buildServiceHeaders(),
+      },
     });
 
     if (!res.ok) {
