@@ -1,0 +1,29 @@
+# Workflows
+
+Workflows provide guided, repeatable execution paths.
+
+## Guided Templates
+
+Templates encode:
+
+- Trigger conditions
+- Input schema and validation
+- Step-by-step agent orchestration
+- Output contracts
+
+Typical templates include onboarding assistants, support escalations, and lead qualification.
+
+## Create Custom Workflows
+
+1. Open `Dashboard -> Workflows -> New Workflow`.
+2. Select a template baseline or start empty.
+3. Define triggers (`manual`, `webhook`, `channel message`).
+4. Add agent steps with explicit success criteria.
+5. Configure retries, timeout, and fallback branches.
+6. Publish and run test executions.
+
+## Operating Model
+
+- Version workflows before major prompt or logic updates.
+- Promote from staging to production after evaluation runs.
+- Track token usage and latency per workflow step.

@@ -1,0 +1,26 @@
+# Swarm
+
+Swarm enables multi-agent coordination with a central coordinator and specialist sub-agents.
+
+## How Coordination Works
+
+1. Coordinator receives task objective and constraints.
+2. Task is decomposed into parallel or sequential work packets.
+3. Sub-agents execute scoped packets with specific tools.
+4. Coordinator aggregates outputs and resolves conflicts.
+5. Final response is validated before return.
+
+## Monitoring Dashboard
+
+Use `Dashboard -> Swarm` to inspect:
+
+- Active runs and queue depth
+- Agent-level latency and token usage
+- Failure points and retry traces
+- Final merge confidence signals
+
+## Reliability Controls
+
+- Max parallel agent cap
+- Circuit breaker for repeated step failures
+- Human approval checkpoints on high-impact actions
