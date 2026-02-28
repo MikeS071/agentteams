@@ -13,12 +13,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/agentteams/api/channels"
-	"github.com/agentteams/api/coordinator"
-	"github.com/agentteams/api/llmproxy"
-	"github.com/agentteams/api/orchestrator"
-	"github.com/agentteams/api/terminal"
-	"github.com/agentteams/api/workflows"
+	"github.com/agentsquads/api/channels"
+	"github.com/agentsquads/api/coordinator"
+	"github.com/agentsquads/api/llmproxy"
+	"github.com/agentsquads/api/orchestrator"
+	"github.com/agentsquads/api/terminal"
+	"github.com/agentsquads/api/workflows"
 
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
@@ -28,7 +28,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprintln(w, "Hello from AgentTeams API")
+		fmt.Fprintln(w, "Hello from AgentSquads API")
 	})
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {

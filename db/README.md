@@ -1,9 +1,9 @@
-# AgentTeams Database
+# AgentSquads Database
 
 ## Running Migrations
 
 ```bash
-export DATABASE_URL="postgresql://user:pass@localhost:5432/agentteams"
+export DATABASE_URL="postgresql://user:pass@localhost:5432/agentsquads"
 bash db/migrate.sh
 ```
 

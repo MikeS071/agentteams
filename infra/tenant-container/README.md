@@ -1,17 +1,17 @@
-# AgentTeams Tenant Container
+# AgentSquads Tenant Container
 
-Docker image for per-tenant AgentTeams containers. Currently runs a placeholder health endpoint — will be replaced with OpenFang once the binary is available.
+Docker image for per-tenant AgentSquads containers. Currently runs a placeholder health endpoint — will be replaced with OpenFang once the binary is available.
 
 ## Build
 
 ```bash
-docker build -t agentteams/tenant:dev .
+docker build -t agentsquads/tenant:dev .
 ```
 
 ## Run
 
 ```bash
-docker run -d -p 4200:4200 -e TENANT_ID=test agentteams/tenant:dev
+docker run -d -p 4200:4200 -e TENANT_ID=test agentsquads/tenant:dev
 ```
 
 ## Test

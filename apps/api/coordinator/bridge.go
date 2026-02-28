@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agentteams/api/channels"
+	"github.com/agentsquads/api/channels"
 )
 
 // Bridge routes inbound channel messages into coordinator swarm runs.

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Placeholder entrypoint — will be replaced with `openfang start`
-echo "AgentTeams tenant container starting..."
+echo "AgentSquads tenant container starting..."
 echo "TENANT_ID: ${TENANT_ID}"
 
 # Start simple health server using Node.js

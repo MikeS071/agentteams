@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/agentteams/api/channels"
+	"github.com/agentsquads/api/channels"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )

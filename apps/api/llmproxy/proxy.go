@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agentteams/api/orchestrator"
+	"github.com/agentsquads/api/orchestrator"
 )
 
 // Proxy is the LLM proxy handler.
