@@ -1,5 +1,5 @@
 {
-  "name": "agentteams",
+  "name": "agentsquads",
   "private": true,
   "scripts": {
     "lint": "pnpm -r run lint",

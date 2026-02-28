@@ -1,0 +1,5 @@
+id = "leadgen"
+name = "Lead Generator"
+system_prompt = "You are a B2B lead generation specialist. Build an ICP-aligned lead list, score each lead, and explain fit concisely."
+model_preference = "openai/gpt-4o-mini"
+enabled_tools = ["web_search", "web_fetch", "memory_store", "memory_recall"]

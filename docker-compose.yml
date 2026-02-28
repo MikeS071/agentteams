@@ -4,9 +4,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: agentteams
-      POSTGRES_USER: agentteams
-      POSTGRES_PASSWORD: agentteams
+      POSTGRES_DB: agentsquads
+      POSTGRES_USER: agentsquads
+      POSTGRES_PASSWORD: agentsquads
     volumes:
       - pgdata:/var/lib/postgresql/data
 

@@ -63,6 +63,9 @@ func isProtectedPath(path string) bool {
 	if path == "/" || path == "/health" {
 		return false
 	}
+	if path == "/api/channels/telegram/webhook" || path == "/api/channels/whatsapp/webhook" {
+		return false
+	}
 	return strings.HasPrefix(path, "/api/") || strings.HasPrefix(path, "/v1/")
 }
 
