@@ -90,7 +90,11 @@ async function readIsAdmin(userId: string): Promise<boolean> {
 }
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 8,
+    updateAge: 60 * 15,
+  },
   pages: {
     signIn: "/login",
   },
@@ -204,6 +208,21 @@ export const authOptions: NextAuthOptions = {
           token.isAdmin ?? false;
       }
       return session;
+    },
+  },
+  useSecureCookies: process.env.NODE_ENV === "production",
+  cookies: {
+    sessionToken: {
+      name:
+        process.env.NODE_ENV === "production"
+          ? "__Secure-next-auth.session-token"
+          : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
     },
   },
   secret: process.env.NEXTAUTH_SECRET,

@@ -9,6 +9,9 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,7 +31,38 @@ const (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
-	CheckOrigin:     func(r *http.Request) bool { return true },
+	CheckOrigin:     checkWebSocketOrigin,
+}
+
+func checkWebSocketOrigin(r *http.Request) bool {
+	originHeader := strings.TrimSpace(r.Header.Get("Origin"))
+	if originHeader == "" {
+		return false
+	}
+
+	originURL, err := url.Parse(originHeader)
+	if err != nil {
+		return false
+	}
+
+	allowedOrigins := []string{
+		strings.TrimSpace(os.Getenv("NEXTAUTH_URL")),
+		strings.TrimSpace(os.Getenv("WEB_ORIGIN")),
+	}
+	for _, allowed := range allowedOrigins {
+		if allowed == "" {
+			continue
+		}
+		allowedURL, err := url.Parse(allowed)
+		if err != nil {
+			continue
+		}
+		if strings.EqualFold(originURL.Host, allowedURL.Host) && originURL.Scheme == allowedURL.Scheme {
+			return true
+		}
+	}
+
+	return false
 }
 
 // resizeMsg is a JSON message from the client to resize the terminal.

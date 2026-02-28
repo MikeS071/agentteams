@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
 import { checkFeatureAccess } from "@/lib/feature-policies";
+import { parseWithSchema } from "@/lib/validation";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,11 +22,15 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const conversationId = searchParams.get("conversationId")?.trim();
-
-  if (!conversationId) {
-    return NextResponse.json({ error: "conversationId is required" }, { status: 400 });
+  const parsed = parseWithSchema(
+    { conversationId: searchParams.get("conversationId") },
+    z.object({ conversationId: z.string().uuid() }),
+    "Invalid query params"
+  );
+  if (!parsed.success) {
+    return parsed.response;
   }
+  const { conversationId } = parsed.data;
 
   const ownership = await pool.query(
     "SELECT id FROM conversations WHERE id = $1 AND tenant_id = $2",

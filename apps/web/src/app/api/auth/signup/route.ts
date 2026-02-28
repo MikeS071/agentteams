@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import pool from "@/lib/db";
+import { verifyMutationOrigin } from "@/lib/security";
+import { parseJSONBody } from "@/lib/validation";
+
+const signupSchema = z.object({
+  email: z.string().email().max(320),
+  password: z.string().min(8).max(128),
+  name: z.string().trim().min(1).max(100).optional(),
+});
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json();
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password required" }, { status: 400 });
+    const originError = verifyMutationOrigin(req);
+    if (originError) {
+      return originError;
     }
+
+    const parsed = await parseJSONBody(req, signupSchema);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const { email, password, name } = parsed.data;
 
     const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
     if (existing.rows.length > 0) {

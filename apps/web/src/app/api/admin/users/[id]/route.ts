@@ -1,22 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import pool from "@/lib/db";
 import { getAdminSession } from "@/lib/admin-auth";
 import { getAdminUserDetail } from "@/lib/admin-user-detail";
+import { verifyMutationOrigin } from "@/lib/security";
+import { parseJSONBody, parseWithSchema } from "@/lib/validation";
 
 type RouteContext = {
   params: { id: string };
 };
 
 export const dynamic = "force-dynamic";
+const userIdParamSchema = z.object({ id: z.string().uuid() });
+const adminUserActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("suspend"),
+    suspended: z.boolean(),
+  }),
+  z.object({
+    action: z.literal("changeRole"),
+    role: z.enum(["user", "admin"]),
+  }),
+  z.object({
+    action: z.literal("adjustCredits"),
+    amountCents: z.number().int().refine((n) => n !== 0),
+    reason: z.string().trim().min(1).max(200),
+  }),
+]);
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const parsedParams = parseWithSchema(params, userIdParamSchema, "Invalid user id");
+  if (!parsedParams.success) {
+    return parsedParams.response;
+  }
+
   const session = await getAdminSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const data = await getAdminUserDetail(params.id);
+    const data = await getAdminUserDetail(parsedParams.data.id);
     if (!data) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -28,25 +52,40 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const originError = verifyMutationOrigin(request);
+  if (originError) {
+    return originError;
+  }
+
+  const parsedParams = parseWithSchema(params, userIdParamSchema, "Invalid user id");
+  if (!parsedParams.success) {
+    return parsedParams.response;
+  }
+  const userId = parsedParams.data.id;
+
   const session = await getAdminSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const body = await request.json();
-    const action = body?.action;
+    const parsedBody = await parseJSONBody(request, adminUserActionSchema);
+    if (!parsedBody.success) {
+      return parsedBody.response;
+    }
+    const body = parsedBody.data;
+    const action = body.action;
 
     if (action === "suspend") {
-      const suspended = Boolean(body?.suspended);
+      const suspended = body.suspended;
       await pool.query(
         `UPDATE users
          SET suspended_at = CASE WHEN $2 THEN NOW() ELSE NULL END,
              updated_at = NOW()
          WHERE id = $1 AND deleted_at IS NULL`,
-        [params.id, suspended]
+        [userId, suspended]
       );
-      const data = await getAdminUserDetail(params.id);
+      const data = await getAdminUserDetail(userId);
       if (!data) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
@@ -54,12 +93,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     if (action === "changeRole") {
-      const role = body?.role;
-      if (role !== "user" && role !== "admin") {
-        return NextResponse.json({ error: "Invalid role" }, { status: 400 });
-      }
+      const role = body.role;
 
-      if (session.user.id === params.id && role !== "admin") {
+      if (session.user.id === userId && role !== "admin") {
         return NextResponse.json({ error: "Cannot demote your own admin role" }, { status: 400 });
       }
 
@@ -68,9 +104,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
          SET is_admin = $2,
              updated_at = NOW()
          WHERE id = $1 AND deleted_at IS NULL`,
-        [params.id, role === "admin"]
+        [userId, role === "admin"]
       );
-      const data = await getAdminUserDetail(params.id);
+      const data = await getAdminUserDetail(userId);
       if (!data) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
@@ -78,15 +114,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     if (action === "adjustCredits") {
-      const amountCents = Number(body?.amountCents);
-      const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
-
-      if (!Number.isInteger(amountCents) || amountCents === 0) {
-        return NextResponse.json({ error: "amountCents must be a non-zero integer" }, { status: 400 });
-      }
-      if (!reason) {
-        return NextResponse.json({ error: "Reason is required" }, { status: 400 });
-      }
+      const amountCents = body.amountCents;
+      const reason = body.reason.trim();
 
       const client = await pool.connect();
       try {
@@ -97,7 +126,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
            FROM users u
            LEFT JOIN tenants t ON t.user_id = u.id
            WHERE u.id = $1 AND u.deleted_at IS NULL`,
-          [params.id]
+          [userId]
         );
 
         const tenantId = tenantResult.rows[0]?.tenant_id;
@@ -135,7 +164,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         client.release();
       }
 
-      const data = await getAdminUserDetail(params.id);
+      const data = await getAdminUserDetail(userId);
       if (!data) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
@@ -150,12 +179,23 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const parsedParams = parseWithSchema(params, userIdParamSchema, "Invalid user id");
+  if (!parsedParams.success) {
+    return parsedParams.response;
+  }
+  const userId = parsedParams.data.id;
+
+  const originError = verifyMutationOrigin(_request);
+  if (originError) {
+    return originError;
+  }
+
   const session = await getAdminSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (session.user.id === params.id) {
+  if (session.user.id === userId) {
     return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
   }
 
@@ -167,7 +207,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
            updated_at = NOW()
        WHERE id = $1 AND deleted_at IS NULL
        RETURNING id`,
-      [params.id]
+      [userId]
     );
 
     if (result.rowCount === 0) {
