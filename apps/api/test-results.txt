@@ -1,0 +1,600 @@
+=== RUN   TestApplyRequestBodyLimit
+=== PAUSE TestApplyRequestBodyLimit
+=== RUN   TestApplyAuth
+=== RUN   TestApplyAuth/public_path
+=== RUN   TestApplyAuth/missing_config
+=== RUN   TestApplyAuth/service_api_key
+=== RUN   TestApplyAuth/jwt_auth
+=== RUN   TestApplyAuth/unauthorized
+--- PASS: TestApplyAuth (0.00s)
+    --- PASS: TestApplyAuth/public_path (0.00s)
+    --- PASS: TestApplyAuth/missing_config (0.00s)
+    --- PASS: TestApplyAuth/service_api_key (0.00s)
+    --- PASS: TestApplyAuth/jwt_auth (0.00s)
+    --- PASS: TestApplyAuth/unauthorized (0.00s)
+=== RUN   TestIsProtectedPathAndValidateJWT
+=== PAUSE TestIsProtectedPathAndValidateJWT
+=== CONT  TestApplyRequestBodyLimit
+--- PASS: TestApplyRequestBodyLimit (0.00s)
+=== CONT  TestIsProtectedPathAndValidateJWT
+--- PASS: TestIsProtectedPathAndValidateJWT (0.00s)
+PASS
+ok  	github.com/agentsquads/api	0.022s
+=== RUN   TestCredentialsStoreUpsertAndGet
+=== PAUSE TestCredentialsStoreUpsertAndGet
+=== RUN   TestCredentialsStoreLookup
+=== PAUSE TestCredentialsStoreLookup
+=== RUN   TestFanoutStartRedisNotConfigured
+=== PAUSE TestFanoutStartRedisNotConfigured
+=== RUN   TestFanoutFanoutFiltering
+=== PAUSE TestFanoutFanoutFiltering
+=== RUN   TestTenantIDFromTopic
+=== PAUSE TestTenantIDFromTopic
+=== RUN   TestFormatters
+=== PAUSE TestFormatters
+=== RUN   TestLinkStoreLinkUnlinkList
+=== PAUSE TestLinkStoreLinkUnlinkList
+=== RUN   TestNormalizeChannel
+=== PAUSE TestNormalizeChannel
+=== RUN   TestNormalizeInbound
+=== PAUSE TestNormalizeInbound
+=== RUN   TestConversationIDFromMetadata
+=== PAUSE TestConversationIDFromMetadata
+=== CONT  TestCredentialsStoreUpsertAndGet
+--- PASS: TestCredentialsStoreUpsertAndGet (0.00s)
+=== CONT  TestConversationIDFromMetadata
+=== RUN   TestConversationIDFromMetadata/snake_case
+=== PAUSE TestConversationIDFromMetadata/snake_case
+=== RUN   TestConversationIDFromMetadata/camel_case
+=== PAUSE TestConversationIDFromMetadata/camel_case
+=== RUN   TestConversationIDFromMetadata/missing
+=== PAUSE TestConversationIDFromMetadata/missing
+=== CONT  TestConversationIDFromMetadata/snake_case
+=== CONT  TestNormalizeInbound
+=== RUN   TestNormalizeInbound/happy_path
+=== PAUSE TestNormalizeInbound/happy_path
+=== RUN   TestNormalizeInbound/unknown_channel
+=== PAUSE TestNormalizeInbound/unknown_channel
+=== RUN   TestNormalizeInbound/empty_content
+=== PAUSE TestNormalizeInbound/empty_content
+=== CONT  TestNormalizeInbound/happy_path
+=== CONT  TestNormalizeChannel
+=== RUN   TestNormalizeChannel/web
+=== PAUSE TestNormalizeChannel/web
+=== RUN   TestNormalizeChannel/telegram
+=== PAUSE TestNormalizeChannel/telegram
+=== RUN   TestNormalizeChannel/signal
+=== PAUSE TestNormalizeChannel/signal
+=== CONT  TestNormalizeChannel/web
+=== CONT  TestLinkStoreLinkUnlinkList
+--- PASS: TestLinkStoreLinkUnlinkList (0.00s)
+=== CONT  TestFormatters
+--- PASS: TestFormatters (0.00s)
+=== CONT  TestTenantIDFromTopic
+=== RUN   TestTenantIDFromTopic/tenant:t1:response
+=== PAUSE TestTenantIDFromTopic/tenant:t1:response
+=== RUN   TestTenantIDFromTopic/tenant:t1:bad
+=== PAUSE TestTenantIDFromTopic/tenant:t1:bad
+=== RUN   TestTenantIDFromTopic/bad
+=== PAUSE TestTenantIDFromTopic/bad
+=== CONT  TestTenantIDFromTopic/tenant:t1:response
+=== CONT  TestFanoutFanoutFiltering
+--- PASS: TestFanoutFanoutFiltering (0.00s)
+=== CONT  TestFanoutStartRedisNotConfigured
+--- PASS: TestFanoutStartRedisNotConfigured (0.00s)
+=== CONT  TestCredentialsStoreLookup
+=== CONT  TestNormalizeInbound/unknown_channel
+=== CONT  TestConversationIDFromMetadata/missing
+=== CONT  TestConversationIDFromMetadata/camel_case
+--- PASS: TestConversationIDFromMetadata (0.00s)
+    --- PASS: TestConversationIDFromMetadata/snake_case (0.00s)
+    --- PASS: TestConversationIDFromMetadata/missing (0.00s)
+    --- PASS: TestConversationIDFromMetadata/camel_case (0.00s)
+=== CONT  TestNormalizeInbound/empty_content
+--- PASS: TestNormalizeInbound (0.00s)
+    --- PASS: TestNormalizeInbound/happy_path (0.00s)
+    --- PASS: TestNormalizeInbound/unknown_channel (0.00s)
+    --- PASS: TestNormalizeInbound/empty_content (0.00s)
+=== CONT  TestNormalizeChannel/telegram
+=== CONT  TestNormalizeChannel/signal
+--- PASS: TestNormalizeChannel (0.00s)
+    --- PASS: TestNormalizeChannel/web (0.00s)
+    --- PASS: TestNormalizeChannel/telegram (0.00s)
+    --- PASS: TestNormalizeChannel/signal (0.00s)
+=== CONT  TestTenantIDFromTopic/bad
+=== CONT  TestTenantIDFromTopic/tenant:t1:bad
+--- PASS: TestTenantIDFromTopic (0.00s)
+    --- PASS: TestTenantIDFromTopic/tenant:t1:response (0.00s)
+    --- PASS: TestTenantIDFromTopic/bad (0.00s)
+    --- PASS: TestTenantIDFromTopic/tenant:t1:bad (0.00s)
+--- PASS: TestCredentialsStoreLookup (0.00s)
+PASS
+ok  	github.com/agentsquads/api/channels	0.012s
+=== RUN   TestNewCoordinatorWithLimits
+=== PAUSE TestNewCoordinatorWithLimits
+=== RUN   TestLoadSwarmConfigFromEnv
+--- PASS: TestLoadSwarmConfigFromEnv (0.00s)
+=== RUN   TestClampHelpers
+=== PAUSE TestClampHelpers
+=== RUN   TestDecompose
+=== PAUSE TestDecompose
+=== RUN   TestRenderDecompositionPrompt
+=== PAUSE TestRenderDecompositionPrompt
+=== RUN   TestCollectOutput
+=== PAUSE TestCollectOutput
+=== RUN   TestCleanup
+=== PAUSE TestCleanup
+=== RUN   TestBridgeHelpers
+=== PAUSE TestBridgeHelpers
+=== CONT  TestNewCoordinatorWithLimits
+--- PASS: TestNewCoordinatorWithLimits (0.00s)
+=== CONT  TestBridgeHelpers
+--- PASS: TestBridgeHelpers (0.00s)
+=== CONT  TestCleanup
+=== CONT  TestRenderDecompositionPrompt
+--- PASS: TestRenderDecompositionPrompt (0.00s)
+--- PASS: TestCleanup (0.00s)
+=== CONT  TestCollectOutput
+=== CONT  TestDecompose
+--- PASS: TestCollectOutput (0.00s)
+=== CONT  TestClampHelpers
+--- PASS: TestClampHelpers (0.00s)
+=== RUN   TestDecompose/numbered_task
+=== PAUSE TestDecompose/numbered_task
+=== RUN   TestDecompose/and_split
+=== PAUSE TestDecompose/and_split
+=== RUN   TestDecompose/empty
+=== PAUSE TestDecompose/empty
+=== CONT  TestDecompose/numbered_task
+=== CONT  TestDecompose/empty
+=== CONT  TestDecompose/and_split
+--- PASS: TestDecompose (0.00s)
+    --- PASS: TestDecompose/empty (0.00s)
+    --- PASS: TestDecompose/and_split (0.00s)
+    --- PASS: TestDecompose/numbered_task (0.00s)
+PASS
+ok  	github.com/agentsquads/api/coordinator	0.009s
+=== RUN   TestCheckCredits
+=== PAUSE TestCheckCredits
+=== RUN   TestBillUsage
+=== PAUSE TestBillUsage
+=== RUN   TestBillUsageConcurrentDeductions
+=== PAUSE TestBillUsageConcurrentDeductions
+=== RUN   TestCalcCostCents
+=== PAUSE TestCalcCostCents
+=== RUN   TestNewModelRegistry
+=== PAUSE TestNewModelRegistry
+=== RUN   TestModelRegistryGetModel
+=== PAUSE TestModelRegistryGetModel
+=== RUN   TestModelPricingLookupViaCalcCost
+=== PAUSE TestModelPricingLookupViaCalcCost
+=== RUN   TestPauseTenant
+=== PAUSE TestPauseTenant
+=== RUN   TestResumeTenant
+=== PAUSE TestResumeTenant
+=== RUN   TestNewProxy
+=== PAUSE TestNewProxy
+=== RUN   TestProxyHandleChatCompletions
+=== RUN   TestProxyHandleChatCompletions/missing_tenant_header
+=== RUN   TestProxyHandleChatCompletions/bad_model
+=== RUN   TestProxyHandleChatCompletions/insufficient_credits_returns_402
+=== RUN   TestProxyHandleChatCompletions/upstream_unauthorized_no_api_key
+2026/02/28 11:48:06 ERROR upstream error provider=openai err="openai returned 401: {\"error\":\"no key\"}"
+=== RUN   TestProxyHandleChatCompletions/timeout_response
+2026/02/28 11:48:06 ERROR upstream error provider=openai err="Post \"https://api.openai.com/v1/chat/completions\": timeout"
+=== RUN   TestProxyHandleChatCompletions/successful_route_and_billing
+2026/02/28 11:48:06 INFO billed usage tenant=t1 model=gpt-4o input=1000 output=1000 cost_cents=1
+--- PASS: TestProxyHandleChatCompletions (0.00s)
+    --- PASS: TestProxyHandleChatCompletions/missing_tenant_header (0.00s)
+    --- PASS: TestProxyHandleChatCompletions/bad_model (0.00s)
+    --- PASS: TestProxyHandleChatCompletions/insufficient_credits_returns_402 (0.00s)
+    --- PASS: TestProxyHandleChatCompletions/upstream_unauthorized_no_api_key (0.00s)
+    --- PASS: TestProxyHandleChatCompletions/timeout_response (0.00s)
+    --- PASS: TestProxyHandleChatCompletions/successful_route_and_billing (0.00s)
+=== RUN   TestExtractOpenAIUsage
+=== PAUSE TestExtractOpenAIUsage
+=== RUN   TestExtractAnthropicUsage
+=== PAUSE TestExtractAnthropicUsage
+=== RUN   TestExtractGeminiUsage
+=== PAUSE TestExtractGeminiUsage
+=== RUN   TestEstimateTokens
+=== PAUSE TestEstimateTokens
+=== CONT  TestCheckCredits
+=== CONT  TestPauseTenant
+=== RUN   TestPauseTenant/happy_path
+=== PAUSE TestPauseTenant/happy_path
+=== RUN   TestPauseTenant/tenant_not_found
+=== PAUSE TestPauseTenant/tenant_not_found
+=== RUN   TestPauseTenant/stop_fails
+=== PAUSE TestPauseTenant/stop_fails
+=== CONT  TestPauseTenant/happy_path
+=== CONT  TestEstimateTokens
+=== RUN   TestEstimateTokens/empty_string_minimum_one
+=== PAUSE TestEstimateTokens/empty_string_minimum_one
+=== RUN   TestEstimateTokens/unicode_string
+=== PAUSE TestEstimateTokens/unicode_string
+=== RUN   TestEstimateTokens/very_long_string
+=== PAUSE TestEstimateTokens/very_long_string
+=== CONT  TestEstimateTokens/empty_string_minimum_one
+=== CONT  TestExtractGeminiUsage
+=== RUN   TestExtractGeminiUsage/happy_path
+=== PAUSE TestExtractGeminiUsage/happy_path
+=== RUN   TestExtractGeminiUsage/missing_metadata
+=== PAUSE TestExtractGeminiUsage/missing_metadata
+=== RUN   TestExtractGeminiUsage/partial_metadata
+=== PAUSE TestExtractGeminiUsage/partial_metadata
+=== CONT  TestExtractGeminiUsage/happy_path
+=== CONT  TestExtractAnthropicUsage
+=== RUN   TestExtractAnthropicUsage/happy_path
+=== PAUSE TestExtractAnthropicUsage/happy_path
+=== RUN   TestExtractAnthropicUsage/missing_usage
+=== PAUSE TestExtractAnthropicUsage/missing_usage
+=== RUN   TestExtractAnthropicUsage/wrong_types
+=== PAUSE TestExtractAnthropicUsage/wrong_types
+=== CONT  TestExtractAnthropicUsage/happy_path
+=== CONT  TestExtractOpenAIUsage
+=== RUN   TestExtractOpenAIUsage/happy_path
+=== PAUSE TestExtractOpenAIUsage/happy_path
+=== RUN   TestExtractOpenAIUsage/missing_usage
+=== PAUSE TestExtractOpenAIUsage/missing_usage
+=== RUN   TestExtractOpenAIUsage/float_values
+=== PAUSE TestExtractOpenAIUsage/float_values
+=== CONT  TestExtractOpenAIUsage/happy_path
+=== CONT  TestNewProxy
+--- PASS: TestNewProxy (0.00s)
+=== CONT  TestResumeTenant
+=== RUN   TestResumeTenant/happy_path
+=== PAUSE TestResumeTenant/happy_path
+=== RUN   TestResumeTenant/insufficient_credits_checked_by_caller_edge_still_updates
+=== PAUSE TestResumeTenant/insufficient_credits_checked_by_caller_edge_still_updates
+=== RUN   TestResumeTenant/start_fails
+=== PAUSE TestResumeTenant/start_fails
+=== CONT  TestResumeTenant/happy_path
+=== CONT  TestPauseTenant/stop_fails
+=== CONT  TestPauseTenant/tenant_not_found
+--- PASS: TestPauseTenant (0.00s)
+    --- PASS: TestPauseTenant/happy_path (0.00s)
+    --- PASS: TestPauseTenant/stop_fails (0.00s)
+    --- PASS: TestPauseTenant/tenant_not_found (0.00s)
+=== CONT  TestEstimateTokens/very_long_string
+=== CONT  TestEstimateTokens/unicode_string
+--- PASS: TestEstimateTokens (0.00s)
+    --- PASS: TestEstimateTokens/empty_string_minimum_one (0.00s)
+    --- PASS: TestEstimateTokens/very_long_string (0.00s)
+    --- PASS: TestEstimateTokens/unicode_string (0.00s)
+=== CONT  TestExtractGeminiUsage/partial_metadata
+=== CONT  TestExtractGeminiUsage/missing_metadata
+--- PASS: TestExtractGeminiUsage (0.00s)
+    --- PASS: TestExtractGeminiUsage/happy_path (0.00s)
+    --- PASS: TestExtractGeminiUsage/partial_metadata (0.00s)
+    --- PASS: TestExtractGeminiUsage/missing_metadata (0.00s)
+=== CONT  TestExtractAnthropicUsage/wrong_types
+=== CONT  TestExtractAnthropicUsage/missing_usage
+--- PASS: TestExtractAnthropicUsage (0.00s)
+    --- PASS: TestExtractAnthropicUsage/happy_path (0.00s)
+    --- PASS: TestExtractAnthropicUsage/wrong_types (0.00s)
+    --- PASS: TestExtractAnthropicUsage/missing_usage (0.00s)
+=== CONT  TestExtractOpenAIUsage/float_values
+=== CONT  TestExtractOpenAIUsage/missing_usage
+--- PASS: TestExtractOpenAIUsage (0.00s)
+    --- PASS: TestExtractOpenAIUsage/happy_path (0.00s)
+    --- PASS: TestExtractOpenAIUsage/float_values (0.00s)
+    --- PASS: TestExtractOpenAIUsage/missing_usage (0.00s)
+=== CONT  TestResumeTenant/start_fails
+=== CONT  TestResumeTenant/insufficient_credits_checked_by_caller_edge_still_updates
+--- PASS: TestResumeTenant (0.00s)
+    --- PASS: TestResumeTenant/happy_path (0.00s)
+    --- PASS: TestResumeTenant/start_fails (0.00s)
+    --- PASS: TestResumeTenant/insufficient_credits_checked_by_caller_edge_still_updates (0.00s)
+=== CONT  TestNewModelRegistry
+=== RUN   TestNewModelRegistry/loads_enabled_models
+=== PAUSE TestNewModelRegistry/loads_enabled_models
+=== RUN   TestNewModelRegistry/query_error
+=== PAUSE TestNewModelRegistry/query_error
+=== RUN   TestNewModelRegistry/scan_error
+=== PAUSE TestNewModelRegistry/scan_error
+=== CONT  TestNewModelRegistry/loads_enabled_models
+2026/02/28 11:48:06 INFO loaded model id=gpt-4o provider=openai
+2026/02/28 11:48:06 INFO loaded model id=claude provider=anthropic
+=== CONT  TestModelPricingLookupViaCalcCost
+--- PASS: TestModelPricingLookupViaCalcCost (0.00s)
+=== CONT  TestModelRegistryGetModel
+=== RUN   TestModelRegistryGetModel/found
+=== PAUSE TestModelRegistryGetModel/found
+=== RUN   TestModelRegistryGetModel/unknown_model_fallback_error
+=== PAUSE TestModelRegistryGetModel/unknown_model_fallback_error
+=== RUN   TestModelRegistryGetModel/empty_model_id
+=== PAUSE TestModelRegistryGetModel/empty_model_id
+=== CONT  TestModelRegistryGetModel/found
+=== CONT  TestNewModelRegistry/scan_error
+=== CONT  TestNewModelRegistry/query_error
+--- PASS: TestNewModelRegistry (0.00s)
+    --- PASS: TestNewModelRegistry/loads_enabled_models (0.00s)
+    --- PASS: TestNewModelRegistry/scan_error (0.00s)
+    --- PASS: TestNewModelRegistry/query_error (0.00s)
+=== CONT  TestModelRegistryGetModel/empty_model_id
+=== CONT  TestModelRegistryGetModel/unknown_model_fallback_error
+--- PASS: TestModelRegistryGetModel (0.00s)
+    --- PASS: TestModelRegistryGetModel/found (0.00s)
+    --- PASS: TestModelRegistryGetModel/empty_model_id (0.00s)
+    --- PASS: TestModelRegistryGetModel/unknown_model_fallback_error (0.00s)
+=== CONT  TestBillUsageConcurrentDeductions
+2026/02/28 11:48:06 INFO billed usage tenant=tenant-c model=m1 input=5 output=6 cost_cents=1
+2026/02/28 11:48:06 INFO billed usage tenant=tenant-c model=m1 input=1 output=2 cost_cents=1
+2026/02/28 11:48:06 INFO billed usage tenant=tenant-c model=m1 input=2 output=3 cost_cents=1
+2026/02/28 11:48:06 INFO billed usage tenant=tenant-c model=m1 input=3 output=4 cost_cents=1
+2026/02/28 11:48:06 INFO billed usage tenant=tenant-c model=m1 input=4 output=5 cost_cents=1
+--- PASS: TestBillUsageConcurrentDeductions (0.00s)
+=== CONT  TestCalcCostCents
+=== RUN   TestCalcCostCents/normal_math_with_markup
+=== PAUSE TestCalcCostCents/normal_math_with_markup
+=== RUN   TestCalcCostCents/minimum_one_cent
+=== PAUSE TestCalcCostCents/minimum_one_cent
+=== RUN   TestCalcCostCents/zero_usage
+=== PAUSE TestCalcCostCents/zero_usage
+=== CONT  TestCalcCostCents/normal_math_with_markup
+=== CONT  TestCalcCostCents/zero_usage
+=== CONT  TestCalcCostCents/minimum_one_cent
+--- PASS: TestCalcCostCents (0.00s)
+    --- PASS: TestCalcCostCents/normal_math_with_markup (0.00s)
+    --- PASS: TestCalcCostCents/zero_usage (0.00s)
+    --- PASS: TestCalcCostCents/minimum_one_cent (0.00s)
+=== CONT  TestBillUsage
+=== RUN   TestBillUsage/happy_path
+=== PAUSE TestBillUsage/happy_path
+=== RUN   TestBillUsage/insert_failure
+=== PAUSE TestBillUsage/insert_failure
+=== RUN   TestBillUsage/commit_failure
+=== PAUSE TestBillUsage/commit_failure
+=== CONT  TestBillUsage/happy_path
+2026/02/28 11:48:06 INFO billed usage tenant=tenant-1 model=m1 input=10 output=20 cost_cents=3
+=== CONT  TestBillUsage/commit_failure
+=== CONT  TestBillUsage/insert_failure
+--- PASS: TestBillUsage (0.00s)
+    --- PASS: TestBillUsage/happy_path (0.00s)
+    --- PASS: TestBillUsage/commit_failure (0.00s)
+    --- PASS: TestBillUsage/insert_failure (0.00s)
+=== RUN   TestCheckCredits/found_balance
+=== PAUSE TestCheckCredits/found_balance
+=== RUN   TestCheckCredits/missing_row_returns_zero
+=== PAUSE TestCheckCredits/missing_row_returns_zero
+=== RUN   TestCheckCredits/db_error
+=== PAUSE TestCheckCredits/db_error
+=== CONT  TestCheckCredits/found_balance
+=== CONT  TestCheckCredits/db_error
+=== CONT  TestCheckCredits/missing_row_returns_zero
+--- PASS: TestCheckCredits (0.00s)
+    --- PASS: TestCheckCredits/found_balance (0.00s)
+    --- PASS: TestCheckCredits/db_error (0.00s)
+    --- PASS: TestCheckCredits/missing_row_returns_zero (0.00s)
+PASS
+ok  	github.com/agentsquads/api/llmproxy	0.009s
+=== RUN   TestApplyAdmin
+=== RUN   TestApplyAdmin/non_admin_path_bypassed
+=== RUN   TestApplyAdmin/missing_session
+=== RUN   TestApplyAdmin/valid_admin_role
+=== RUN   TestApplyAdmin/non_admin_blocked
+=== RUN   TestApplyAdmin/allowlist_email
+=== RUN   TestApplyAdmin/missing_secret_config
+--- PASS: TestApplyAdmin (0.00s)
+    --- PASS: TestApplyAdmin/non_admin_path_bypassed (0.00s)
+    --- PASS: TestApplyAdmin/missing_session (0.00s)
+    --- PASS: TestApplyAdmin/valid_admin_role (0.00s)
+    --- PASS: TestApplyAdmin/non_admin_blocked (0.00s)
+    --- PASS: TestApplyAdmin/allowlist_email (0.00s)
+    --- PASS: TestApplyAdmin/missing_secret_config (0.00s)
+=== RUN   TestAdminFromContextMissing
+=== PAUSE TestAdminFromContextMissing
+=== CONT  TestAdminFromContextMissing
+--- PASS: TestAdminFromContextMissing (0.00s)
+PASS
+ok  	github.com/agentsquads/api/middleware	0.005s
+=== RUN   TestContainerName
+=== PAUSE TestContainerName
+=== RUN   TestGetContainerID
+=== PAUSE TestGetContainerID
+=== RUN   TestTenantOrchestratorInterface
+=== PAUSE TestTenantOrchestratorInterface
+=== CONT  TestContainerName
+=== RUN   TestContainerName/abc
+=== PAUSE TestContainerName/abc
+=== RUN   TestContainerName/1234567890
+=== PAUSE TestContainerName/1234567890
+=== RUN   TestContainerName/tenant-long-id
+=== PAUSE TestContainerName/tenant-long-id
+=== CONT  TestTenantOrchestratorInterface
+--- PASS: TestTenantOrchestratorInterface (0.00s)
+=== CONT  TestContainerName/abc
+=== CONT  TestGetContainerID
+=== RUN   TestGetContainerID/happy_path
+=== PAUSE TestGetContainerID/happy_path
+=== RUN   TestGetContainerID/tenant_not_found
+=== PAUSE TestGetContainerID/tenant_not_found
+=== RUN   TestGetContainerID/empty_container
+=== CONT  TestContainerName/tenant-long-id
+=== PAUSE TestGetContainerID/empty_container
+=== CONT  TestGetContainerID/happy_path
+=== CONT  TestGetContainerID/empty_container
+=== CONT  TestGetContainerID/tenant_not_found
+=== CONT  TestContainerName/1234567890
+--- PASS: TestGetContainerID (0.00s)
+    --- PASS: TestGetContainerID/happy_path (0.00s)
+    --- PASS: TestGetContainerID/tenant_not_found (0.00s)
+    --- PASS: TestGetContainerID/empty_container (0.00s)
+--- PASS: TestContainerName (0.00s)
+    --- PASS: TestContainerName/abc (0.00s)
+    --- PASS: TestContainerName/tenant-long-id (0.00s)
+    --- PASS: TestContainerName/1234567890 (0.00s)
+PASS
+ok  	github.com/agentsquads/api/orchestrator	0.008s
+=== RUN   TestAdminHandlerMountAndEndpointsWithNilDB
+=== PAUSE TestAdminHandlerMountAndEndpointsWithNilDB
+=== RUN   TestChannelHandlerMountAndBasicErrors
+=== PAUSE TestChannelHandlerMountAndBasicErrors
+=== RUN   TestDeployHandlerNilDB
+=== PAUSE TestDeployHandlerNilDB
+=== RUN   TestDeployValidationErrors
+=== PAUSE TestDeployValidationErrors
+=== RUN   TestParseTypeFilter
+=== PAUSE TestParseTypeFilter
+=== RUN   TestEventBlockFiltering
+=== PAUSE TestEventBlockFiltering
+=== RUN   TestExtractDataPayload
+=== PAUSE TestExtractDataPayload
+=== RUN   TestWriteJSON
+=== PAUSE TestWriteJSON
+=== RUN   TestWriteAPIError
+=== PAUSE TestWriteAPIError
+=== RUN   TestDecodeJSONStrict
+=== PAUSE TestDecodeJSONStrict
+=== RUN   TestMountSwarmRoutes
+=== PAUSE TestMountSwarmRoutes
+=== CONT  TestAdminHandlerMountAndEndpointsWithNilDB
+=== CONT  TestExtractDataPayload
+--- PASS: TestExtractDataPayload (0.00s)
+=== CONT  TestMountSwarmRoutes
+--- PASS: TestMountSwarmRoutes (0.00s)
+=== CONT  TestDecodeJSONStrict
+=== RUN   TestDecodeJSONStrict/valid
+=== PAUSE TestDecodeJSONStrict/valid
+=== RUN   TestDecodeJSONStrict/unknown_field
+=== PAUSE TestDecodeJSONStrict/unknown_field
+=== RUN   TestDecodeJSONStrict/trailing_payload_allowed_by_current_parser
+=== PAUSE TestDecodeJSONStrict/trailing_payload_allowed_by_current_parser
+=== CONT  TestDecodeJSONStrict/valid
+=== CONT  TestWriteAPIError
+=== CONT  TestParseTypeFilter
+=== RUN   TestParseTypeFilter/multiple
+=== PAUSE TestParseTypeFilter/multiple
+=== RUN   TestParseTypeFilter/spaces
+=== PAUSE TestParseTypeFilter/spaces
+=== RUN   TestParseTypeFilter/empty
+=== PAUSE TestParseTypeFilter/empty
+--- PASS: TestAdminHandlerMountAndEndpointsWithNilDB (0.00s)
+=== CONT  TestEventBlockFiltering
+--- PASS: TestEventBlockFiltering (0.00s)
+=== CONT  TestDeployHandlerNilDB
+--- PASS: TestDeployHandlerNilDB (0.00s)
+=== CONT  TestChannelHandlerMountAndBasicErrors
+=== RUN   TestChannelHandlerMountAndBasicErrors/inbound_missing_router
+=== PAUSE TestChannelHandlerMountAndBasicErrors/inbound_missing_router
+=== RUN   TestChannelHandlerMountAndBasicErrors/connect_telegram_missing_stores
+=== PAUSE TestChannelHandlerMountAndBasicErrors/connect_telegram_missing_stores
+=== RUN   TestChannelHandlerMountAndBasicErrors/list_channels_missing_db
+=== PAUSE TestChannelHandlerMountAndBasicErrors/list_channels_missing_db
+--- PASS: TestWriteAPIError (0.00s)
+=== CONT  TestDecodeJSONStrict/trailing_payload_allowed_by_current_parser
+=== CONT  TestWriteJSON
+--- PASS: TestWriteJSON (0.00s)
+=== CONT  TestDecodeJSONStrict/unknown_field
+--- PASS: TestDecodeJSONStrict (0.00s)
+    --- PASS: TestDecodeJSONStrict/valid (0.00s)
+    --- PASS: TestDecodeJSONStrict/trailing_payload_allowed_by_current_parser (0.00s)
+    --- PASS: TestDecodeJSONStrict/unknown_field (0.00s)
+=== CONT  TestChannelHandlerMountAndBasicErrors/inbound_missing_router
+=== CONT  TestChannelHandlerMountAndBasicErrors/list_channels_missing_db
+=== CONT  TestChannelHandlerMountAndBasicErrors/connect_telegram_missing_stores
+--- PASS: TestChannelHandlerMountAndBasicErrors (0.00s)
+    --- PASS: TestChannelHandlerMountAndBasicErrors/inbound_missing_router (0.00s)
+    --- PASS: TestChannelHandlerMountAndBasicErrors/list_channels_missing_db (0.00s)
+    --- PASS: TestChannelHandlerMountAndBasicErrors/connect_telegram_missing_stores (0.00s)
+=== CONT  TestDeployValidationErrors
+--- PASS: TestDeployValidationErrors (0.00s)
+=== CONT  TestParseTypeFilter/multiple
+=== CONT  TestParseTypeFilter/empty
+=== CONT  TestParseTypeFilter/spaces
+--- PASS: TestParseTypeFilter (0.00s)
+    --- PASS: TestParseTypeFilter/multiple (0.00s)
+    --- PASS: TestParseTypeFilter/empty (0.00s)
+    --- PASS: TestParseTypeFilter/spaces (0.00s)
+PASS
+ok  	github.com/agentsquads/api/routes	0.008s
+?   	github.com/agentsquads/api/terminal	[no test files]
+=== RUN   TestRunToolLoop
+=== RUN   TestRunToolLoop/final_response_no_tool_call
+2026/02/28 11:48:07 INFO tool loop complete iterations=1 agent=t1
+=== RUN   TestRunToolLoop/tool_call_then_final
+2026/02/28 11:48:07 INFO executing tool tool=memory_store iteration=1
+2026/02/28 11:48:07 INFO tool loop iteration=1 calls=1
+2026/02/28 11:48:07 INFO tool loop complete iterations=2 agent=t1
+=== RUN   TestRunToolLoop/missing_api_key
+--- PASS: TestRunToolLoop (0.00s)
+    --- PASS: TestRunToolLoop/final_response_no_tool_call (0.00s)
+    --- PASS: TestRunToolLoop/tool_call_then_final (0.00s)
+    --- PASS: TestRunToolLoop/missing_api_key (0.00s)
+=== RUN   TestMapModelAndTruncate
+=== PAUSE TestMapModelAndTruncate
+=== RUN   TestNewRegistryAndGetTools
+=== PAUSE TestNewRegistryAndGetTools
+=== RUN   TestExecuteUnknownTool
+=== PAUSE TestExecuteUnknownTool
+=== RUN   TestWebFetch
+=== PAUSE TestWebFetch
+=== RUN   TestWebSearch
+=== PAUSE TestWebSearch
+=== RUN   TestMemoryStoreRecall
+=== PAUSE TestMemoryStoreRecall
+=== CONT  TestMapModelAndTruncate
+--- PASS: TestMapModelAndTruncate (0.00s)
+=== CONT  TestMemoryStoreRecall
+=== CONT  TestWebFetch
+--- PASS: TestMemoryStoreRecall (0.00s)
+=== CONT  TestExecuteUnknownTool
+--- PASS: TestExecuteUnknownTool (0.00s)
+=== CONT  TestNewRegistryAndGetTools
+--- PASS: TestNewRegistryAndGetTools (0.00s)
+=== CONT  TestWebSearch
+--- PASS: TestWebSearch (0.00s)
+=== RUN   TestWebFetch/happy_path
+=== RUN   TestWebFetch/http_error_status
+=== RUN   TestWebFetch/missing_url
+--- PASS: TestWebFetch (0.00s)
+    --- PASS: TestWebFetch/happy_path (0.00s)
+    --- PASS: TestWebFetch/http_error_status (0.00s)
+    --- PASS: TestWebFetch/missing_url (0.00s)
+PASS
+ok  	github.com/agentsquads/api/tools	0.007s
+=== RUN   TestCompileTaskBrief
+=== PAUSE TestCompileTaskBrief
+=== RUN   TestParseStarterWorkflows
+--- PASS: TestParseStarterWorkflows (0.00s)
+=== RUN   TestRunnerLifecycle
+=== PAUSE TestRunnerLifecycle
+=== RUN   TestRunnerErrorPaths
+=== PAUSE TestRunnerErrorPaths
+=== RUN   TestRunnerNormalizeInput
+=== PAUSE TestRunnerNormalizeInput
+=== CONT  TestCompileTaskBrief
+=== RUN   TestCompileTaskBrief/happy_path
+=== PAUSE TestCompileTaskBrief/happy_path
+=== RUN   TestCompileTaskBrief/skips_empty_values
+=== PAUSE TestCompileTaskBrief/skips_empty_values
+=== RUN   TestCompileTaskBrief/empty_inputs_keeps_title
+=== PAUSE TestCompileTaskBrief/empty_inputs_keeps_title
+=== CONT  TestRunnerErrorPaths
+--- PASS: TestRunnerErrorPaths (0.00s)
+=== CONT  TestRunnerLifecycle
+=== CONT  TestRunnerNormalizeInput
+--- PASS: TestRunnerLifecycle (0.00s)
+=== CONT  TestCompileTaskBrief/happy_path
+=== RUN   TestRunnerNormalizeInput/text
+=== PAUSE TestRunnerNormalizeInput/text
+=== RUN   TestRunnerNormalizeInput/choice_invalid
+=== PAUSE TestRunnerNormalizeInput/choice_invalid
+=== RUN   TestRunnerNormalizeInput/confirm_default
+=== PAUSE TestRunnerNormalizeInput/confirm_default
+=== CONT  TestCompileTaskBrief/empty_inputs_keeps_title
+=== CONT  TestRunnerNormalizeInput/text
+=== CONT  TestCompileTaskBrief/skips_empty_values
+=== CONT  TestRunnerNormalizeInput/confirm_default
+=== CONT  TestRunnerNormalizeInput/choice_invalid
+--- PASS: TestCompileTaskBrief (0.00s)
+    --- PASS: TestCompileTaskBrief/happy_path (0.00s)
+    --- PASS: TestCompileTaskBrief/empty_inputs_keeps_title (0.00s)
+    --- PASS: TestCompileTaskBrief/skips_empty_values (0.00s)
+--- PASS: TestRunnerNormalizeInput (0.00s)
+    --- PASS: TestRunnerNormalizeInput/text (0.00s)
+    --- PASS: TestRunnerNormalizeInput/confirm_default (0.00s)
+    --- PASS: TestRunnerNormalizeInput/choice_invalid (0.00s)
+PASS
+ok  	github.com/agentsquads/api/workflows	0.005s
