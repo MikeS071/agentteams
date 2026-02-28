@@ -14,6 +14,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/dashboard/chat", label: "Chat", feature: "webchat" },
+  { href: "/dashboard/hands", label: "Hands" },
   { href: "/dashboard/agents", label: "Agents" },
   { href: "/dashboard/usage", label: "Usage" },
 ];
