@@ -1,21 +1,35 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import { verifyMutationOrigin } from "@/lib/security";
 import { getStripe } from "@/lib/stripe";
+import { parseJSONBody } from "@/lib/validation";
 
 const ALLOWED_AMOUNTS = new Set([10, 25, 50, 100]);
+const checkoutSchema = z.object({
+  amount: z.number().int(),
+});
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const originError = verifyMutationOrigin(request);
+    if (originError) {
+      return originError;
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !session.user.tenantId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const amount = Number(body?.amount);
+    const parsed = await parseJSONBody(request, checkoutSchema);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const amount = parsed.data.amount;
     if (!ALLOWED_AMOUNTS.has(amount)) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }

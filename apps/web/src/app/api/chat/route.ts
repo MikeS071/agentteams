@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
 import { authOptions } from "@/lib/auth";
+import { buildServiceHeaders, verifyMutationOrigin } from "@/lib/security";
 import { checkFeatureAccess } from "@/lib/feature-policies";
+import { parseJSONBody } from "@/lib/validation";
 
 type InboundResponse = {
   content?: string;
@@ -14,6 +17,11 @@ function unauthorized() {
 }
 
 export async function POST(req: Request) {
+  const originError = verifyMutationOrigin(req);
+  if (originError) {
+    return originError;
+  }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.tenantId) {
     return unauthorized();
@@ -28,17 +36,19 @@ export async function POST(req: Request) {
     return swarmAccess;
   }
 
-  let body: { conversationId?: string; message?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  const parsed = await parseJSONBody(
+    req,
+    z.object({
+      conversationId: z.string().uuid().optional(),
+      message: z.string().trim().min(1).max(4000),
+    })
+  );
+  if (!parsed.success) {
+    return parsed.response;
   }
+  const body = parsed.data;
 
-  const message = body.message?.trim();
-  if (!message) {
-    return NextResponse.json({ error: "Message is required" }, { status: 400 });
-  }
+  const message = body.message;
 
   const metadata: Record<string, string> = {};
   const conversationId = body.conversationId?.trim();
@@ -53,6 +63,7 @@ export async function POST(req: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...buildServiceHeaders(),
       },
       body: JSON.stringify({
         tenant_id: session.user.tenantId,

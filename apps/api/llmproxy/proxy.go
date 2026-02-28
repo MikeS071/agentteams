@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -79,12 +80,36 @@ func (p *Proxy) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "missing X-Tenant-ID header")
 		return
 	}
+	tenantID = strings.TrimSpace(tenantID)
+	if tenantID == "" {
+		writeError(w, http.StatusUnauthorized, "invalid X-Tenant-ID header")
+		return
+	}
 
 	// Parse request
 	var req chatRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSONStrict(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
+	}
+	req.Model = strings.TrimSpace(req.Model)
+	if req.Model == "" {
+		writeError(w, http.StatusBadRequest, "model is required")
+		return
+	}
+	if len(req.Messages) == 0 {
+		writeError(w, http.StatusBadRequest, "messages are required")
+		return
+	}
+	if len(req.Messages) > 100 {
+		writeError(w, http.StatusBadRequest, "too many messages")
+		return
+	}
+	for _, msg := range req.Messages {
+		if strings.TrimSpace(msg.Role) == "" || strings.TrimSpace(msg.Content) == "" {
+			writeError(w, http.StatusBadRequest, "messages must include role and content")
+			return
+		}
 	}
 
 	// Look up model
@@ -380,4 +405,16 @@ func writeError(w http.ResponseWriter, code int, msg string) {
 			"type":    "invalid_request_error",
 		},
 	})
+}
+
+func decodeJSONStrict(r *http.Request, dst any) error {
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(dst); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return errors.New("request body must contain a single JSON object")
+	}
+	return nil
 }
