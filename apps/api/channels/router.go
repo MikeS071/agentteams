@@ -299,6 +299,9 @@ func (r *Router) generateAssistantResponse(ctx context.Context, tenantID, conver
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Tenant-ID", tenantID)
+	if serviceKey := strings.TrimSpace(os.Getenv("SERVICE_API_KEY")); serviceKey != "" {
+		req.Header.Set("X-Service-API-Key", serviceKey)
+	}
 
 	resp, err := r.httpClient.Do(req)
 	if err != nil {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAdminSession } from "@/lib/adminAuth";
 import {
   assertValidCost,
@@ -6,15 +7,17 @@ import {
   createAdminModel,
   listAdminModels,
 } from "@/lib/adminModels";
+import { verifyMutationOrigin } from "@/lib/security";
+import { parseJSONBody } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-type CreateModelBody = {
-  name?: unknown;
-  provider?: unknown;
-  providerCostPer1k?: unknown;
-  markupPct?: unknown;
-};
+const createModelSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  provider: z.string().trim().min(1).max(60),
+  providerCostPer1k: z.number().positive(),
+  markupPct: z.number().min(0).max(500),
+});
 
 export async function GET() {
   try {
@@ -33,26 +36,24 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const originError = verifyMutationOrigin(request);
+    if (originError) {
+      return originError;
+    }
+
     const admin = await requireAdminSession();
     if (!admin.ok) {
       return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
-    const body = (await request.json()) as CreateModelBody;
-    const name = typeof body.name === "string" ? body.name : "";
-    const provider = typeof body.provider === "string" ? body.provider : "";
-    const providerCostPer1k = Number(body.providerCostPer1k);
-    const markupPct = Number(body.markupPct);
+    const parsed = await parseJSONBody(request, createModelSchema);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const { name, provider, providerCostPer1k, markupPct } = parsed.data;
 
     assertValidCost(providerCostPer1k);
     assertValidMarkup(markupPct);
-
-    if (!name.trim() || !provider.trim()) {
-      return NextResponse.json(
-        { error: "Name and provider are required" },
-        { status: 400 }
-      );
-    }
 
     const model = await createAdminModel({
       name,

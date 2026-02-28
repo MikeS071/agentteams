@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -142,15 +143,24 @@ func (h *Handler) StartRun(ctx context.Context, tenantID string, req RunRequest)
 }
 
 func (h *Handler) handleRun(w http.ResponseWriter, r *http.Request) {
-	tenantID := r.PathValue("id")
+	tenantID := strings.TrimSpace(r.PathValue("id"))
 	if tenantID == "" {
 		http.Error(w, `{"error":"missing tenant id"}`, http.StatusBadRequest)
 		return
 	}
 
 	var body RunRequest
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := decodeJSONStrict(r, &body); err != nil {
 		http.Error(w, `{"error":"invalid JSON body"}`, http.StatusBadRequest)
+		return
+	}
+	body.Task = strings.TrimSpace(body.Task)
+	if body.Task == "" {
+		http.Error(w, `{"error":"missing task field"}`, http.StatusBadRequest)
+		return
+	}
+	if len(body.Task) > 10000 {
+		http.Error(w, `{"error":"task is too long"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -174,7 +184,11 @@ func (h *Handler) handleRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleStatus(w http.ResponseWriter, r *http.Request) {
-	tenantID := r.PathValue("id")
+	tenantID := strings.TrimSpace(r.PathValue("id"))
+	if tenantID == "" {
+		http.Error(w, `{"error":"missing tenant id"}`, http.StatusBadRequest)
+		return
+	}
 
 	h.mu.RLock()
 	run := h.runs[tenantID]
@@ -209,7 +223,11 @@ func (h *Handler) handleRuns(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleCancel(w http.ResponseWriter, r *http.Request) {
-	tenantID := r.PathValue("id")
+	tenantID := strings.TrimSpace(r.PathValue("id"))
+	if tenantID == "" {
+		http.Error(w, `{"error":"missing tenant id"}`, http.StatusBadRequest)
+		return
+	}
 
 	h.mu.Lock()
 	run := h.runs[tenantID]
@@ -232,6 +250,18 @@ func (h *Handler) handleCancel(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]string{"status": "cancelled"})
+}
+
+func decodeJSONStrict(r *http.Request, dst any) error {
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(dst); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return errors.New("request body must contain a single JSON object")
+	}
+	return nil
 }
 
 func (h *Handler) prependHistoryLocked(tenantID string, run *SwarmRun) {

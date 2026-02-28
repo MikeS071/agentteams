@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 )
 
 // Handler exposes workflow endpoints over HTTP.
@@ -40,8 +42,13 @@ func (h *Handler) handleStart(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		TenantID string `json:"tenant_id"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := decodeJSONStrict(r, &body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	body.TenantID = strings.TrimSpace(body.TenantID)
+	if body.TenantID == "" {
+		writeError(w, http.StatusBadRequest, "tenant_id is required")
 		return
 	}
 
@@ -72,8 +79,17 @@ func (h *Handler) handleStep(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Input string `json:"input"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := decodeJSONStrict(r, &body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	body.Input = strings.TrimSpace(body.Input)
+	if body.Input == "" {
+		writeError(w, http.StatusBadRequest, "input is required")
+		return
+	}
+	if len(body.Input) > 10000 {
+		writeError(w, http.StatusBadRequest, "input too long")
 		return
 	}
 
@@ -171,4 +187,16 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
+}
+
+func decodeJSONStrict(r *http.Request, dst any) error {
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(dst); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return errors.New("request body must contain a single JSON object")
+	}
+	return nil
 }

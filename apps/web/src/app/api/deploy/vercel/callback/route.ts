@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { decrypt, encrypt } from "@/lib/crypto";
 import pool from "@/lib/db";
 import { checkFeatureAccess } from "@/lib/feature-policies";
+import { parseWithSchema } from "@/lib/validation";
 
 type VercelTokenResponse = {
   access_token?: string;
@@ -58,6 +60,19 @@ function parseState(state: string): OAuthState | null {
   }
 }
 
+function isValidOAuthState(state: OAuthState, provider: "vercel" | "supabase", tenantId: string): boolean {
+  const issuedAt = Number(state.issuedAt);
+  if (
+    !state ||
+    state.provider !== provider ||
+    state.tenantId !== tenantId ||
+    !Number.isFinite(issuedAt)
+  ) {
+    return false;
+  }
+  return Date.now() - issuedAt <= 10 * 60 * 1000;
+}
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   const tenantId = session?.user?.tenantId;
@@ -69,19 +84,36 @@ export async function GET(request: NextRequest) {
     return featureAccess;
   }
 
-  const providerError = request.nextUrl.searchParams.get("error");
+  const parsedQuery = parseWithSchema(
+    {
+      error: request.nextUrl.searchParams.get("error"),
+      code: request.nextUrl.searchParams.get("code"),
+      state: request.nextUrl.searchParams.get("state"),
+    },
+    z.object({
+      error: z.string().min(1).optional().nullable(),
+      code: z.string().min(1).optional().nullable(),
+      state: z.string().min(1).optional().nullable(),
+    }),
+    "Invalid query params"
+  );
+  if (!parsedQuery.success) {
+    return NextResponse.redirect(settingsUrl(request, { error: "invalid_query_params" }));
+  }
+
+  const providerError = parsedQuery.data.error ?? null;
   if (providerError) {
     return NextResponse.redirect(settingsUrl(request, { error: providerError }));
   }
 
-  const code = request.nextUrl.searchParams.get("code");
-  const state = request.nextUrl.searchParams.get("state");
+  const code = parsedQuery.data.code ?? null;
+  const state = parsedQuery.data.state ?? null;
   if (!code || !state) {
     return NextResponse.redirect(settingsUrl(request, { error: "missing_oauth_params" }));
   }
 
   const parsedState = parseState(state);
-  if (!parsedState || parsedState.provider !== "vercel" || parsedState.tenantId !== tenantId) {
+  if (!parsedState || !isValidOAuthState(parsedState, "vercel", tenantId)) {
     return NextResponse.redirect(settingsUrl(request, { error: "invalid_state" }));
   }
 
