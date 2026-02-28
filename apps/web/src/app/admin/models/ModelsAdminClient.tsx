@@ -1,17 +1,25 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import type { AdminModel } from "@/lib/adminModels";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
-type AddFormState = {
+type AdminModel = {
+  id: string;
   name: string;
   provider: string;
-  providerCostPer1k: string;
-  markupPct: string;
+  costPer1kInput: number;
+  costPer1kOutput: number;
+  markupPct: number;
+  enabled: boolean;
 };
 
-type Props = {
-  initialModels: AdminModel[];
+type AddModelForm = {
+  id: string;
+  name: string;
+  provider: string;
+  costPer1kInput: string;
+  costPer1kOutput: string;
+  markupPct: string;
+  enabled: boolean;
 };
 
 function formatUsd(value: number) {
@@ -23,109 +31,125 @@ function formatUsd(value: number) {
   }).format(value);
 }
 
-function formatUsdFromCents(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value / 100);
+function asInputValue(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+  return String(value);
 }
 
-export default function ModelsAdminClient({ initialModels }: Props) {
-  const [models, setModels] = useState<AdminModel[]>(initialModels);
-  const [pendingById, setPendingById] = useState<Record<string, boolean>>({});
+function userPrice(value: number, markupPct: number): number {
+  return value * (1 + markupPct / 100);
+}
+
+function createModelId(name: string, provider: string): string {
+  const safe = `${provider}-${name}`
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+
+  return `${safe || "model"}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export default function ModelsAdminClient() {
+  const [models, setModels] = useState<AdminModel[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingById, setPendingById] = useState<Record<string, boolean>>({});
   const [addPending, setAddPending] = useState(false);
-  const [form, setForm] = useState<AddFormState>({
+  const [form, setForm] = useState<AddModelForm>({
+    id: "",
     name: "",
     provider: "",
-    providerCostPer1k: "",
+    costPer1kInput: "",
+    costPer1kOutput: "",
     markupPct: "30",
+    enabled: true,
   });
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadModels() {
+      try {
+        const response = await fetch("/api/admin/models", { cache: "no-store" });
+        const payload = (await response.json().catch(() => null)) as
+          | { models?: AdminModel[]; error?: string }
+          | null;
+
+        if (!response.ok) {
+          throw new Error(payload?.error ?? "Failed to load models");
+        }
+
+        if (mounted) {
+          setModels(Array.isArray(payload?.models) ? payload.models : []);
+          setError(null);
+        }
+      } catch (requestError) {
+        if (mounted) {
+          setError(requestError instanceof Error ? requestError.message : "Failed to load models");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadModels();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const sortedModels = useMemo(
     () => [...models].sort((a, b) => a.provider.localeCompare(b.provider) || a.name.localeCompare(b.name)),
     [models]
   );
 
-  async function patchModel(
-    id: string,
-    patch: { markupPct?: number; enabled?: boolean },
-    rollback: AdminModel
-  ) {
-    setPendingById((prev) => ({ ...prev, [id]: true }));
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/admin/models/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patch),
-      });
-      const data = (await response.json()) as { model?: AdminModel; error?: string };
-      if (!response.ok || !data.model) {
-        throw new Error(data.error ?? "Failed to update model");
-      }
-
-      setModels((prev) => prev.map((model) => (model.id === id ? data.model! : model)));
-    } catch (err) {
-      setModels((prev) => prev.map((model) => (model.id === id ? rollback : model)));
-      setError(err instanceof Error ? err.message : "Failed to update model");
-    } finally {
-      setPendingById((prev) => ({ ...prev, [id]: false }));
-    }
+  function patchLocalModel(id: string, patch: Partial<AdminModel>) {
+    setModels((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   }
 
-  async function handleMarkupBlur(model: AdminModel, nextMarkupRaw: string) {
-    const nextMarkup = Number(nextMarkupRaw);
-    if (!Number.isFinite(nextMarkup) || nextMarkup < 0 || nextMarkup > 500) {
-      setError("Markup must be between 0 and 500");
-      setModels((prev) => prev.map((item) => (item.id === model.id ? model : item)));
+  async function saveRow(model: AdminModel) {
+    if (model.costPer1kInput < 0 || model.costPer1kOutput < 0) {
+      setError("Costs must be zero or greater");
+      return;
+    }
+    if (!Number.isFinite(model.markupPct) || model.markupPct < 0 || model.markupPct > 1000) {
+      setError("Markup must be between 0 and 1000");
       return;
     }
 
-    if (nextMarkup === model.markupPct) {
-      return;
-    }
-
-    const optimisticModel: AdminModel = {
-      ...model,
-      markupPct: nextMarkup,
-      userPricePer1k: model.providerCostPer1k * (1 + nextMarkup / 100),
-    };
-
-    setModels((prev) => prev.map((item) => (item.id === model.id ? optimisticModel : item)));
-    await patchModel(model.id, { markupPct: nextMarkup }, model);
-  }
-
-  async function handleToggle(model: AdminModel, enabled: boolean) {
-    const optimisticModel: AdminModel = { ...model, enabled };
-    setModels((prev) => prev.map((item) => (item.id === model.id ? optimisticModel : item)));
-    await patchModel(model.id, { enabled }, model);
-  }
-
-  async function handleDelete(model: AdminModel) {
-    if (!window.confirm(`Delete model "${model.name}"? This is a soft delete.`)) {
-      return;
-    }
-
-    setError(null);
     setPendingById((prev) => ({ ...prev, [model.id]: true }));
-    const previousModels = models;
-    setModels((prev) => prev.filter((item) => item.id !== model.id));
+    setError(null);
 
     try {
       const response = await fetch(`/api/admin/models/${model.id}`, {
-        method: "DELETE",
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          costPer1kInput: model.costPer1kInput,
+          costPer1kOutput: model.costPer1kOutput,
+          markupPct: model.markupPct,
+        }),
       });
-      const data = (await response.json()) as { ok?: boolean; error?: string };
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? "Failed to delete model");
+
+      const payload = (await response.json().catch(() => null)) as
+        | { model?: AdminModel; error?: string }
+        | null;
+
+      if (!response.ok || !payload?.model) {
+        throw new Error(payload?.error ?? "Failed to update model");
       }
-    } catch (err) {
-      setModels(previousModels);
-      setError(err instanceof Error ? err.message : "Failed to delete model");
+
+      patchLocalModel(model.id, payload.model);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Failed to update model");
     } finally {
       setPendingById((prev) => ({ ...prev, [model.id]: false }));
     }
@@ -135,184 +159,245 @@ export default function ModelsAdminClient({ initialModels }: Props) {
     event.preventDefault();
     setError(null);
 
-    const providerCostPer1k = Number(form.providerCostPer1k);
-    const markupPct = Number(form.markupPct);
+    const inputCost = Number(form.costPer1kInput);
+    const outputCost = Number(form.costPer1kOutput);
+    const markup = Number(form.markupPct);
 
     if (!form.name.trim() || !form.provider.trim()) {
       setError("Name and provider are required");
       return;
     }
-    if (!Number.isFinite(providerCostPer1k) || providerCostPer1k <= 0) {
-      setError("Provider cost must be positive");
+    if (!Number.isFinite(inputCost) || inputCost < 0 || !Number.isFinite(outputCost) || outputCost < 0) {
+      setError("Cost values must be zero or greater");
       return;
     }
-    if (!Number.isFinite(markupPct) || markupPct < 0 || markupPct > 500) {
-      setError("Markup must be between 0 and 500");
+    if (!Number.isFinite(markup) || markup < 0 || markup > 1000) {
+      setError("Markup must be between 0 and 1000");
       return;
     }
 
     setAddPending(true);
+
     try {
+      const id = form.id.trim() || createModelId(form.name, form.provider);
       const response = await fetch("/api/admin/models", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
+          id,
           name: form.name,
           provider: form.provider,
-          providerCostPer1k,
-          markupPct,
+          costPer1kInput: inputCost,
+          costPer1kOutput: outputCost,
+          markupPct: markup,
+          enabled: form.enabled,
         }),
       });
-      const data = (await response.json()) as { model?: AdminModel; error?: string };
-      if (!response.ok || !data.model) {
-        throw new Error(data.error ?? "Failed to create model");
+
+      const payload = (await response.json().catch(() => null)) as
+        | { model?: AdminModel; error?: string }
+        | null;
+
+      if (!response.ok || !payload?.model) {
+        throw new Error(payload?.error ?? "Failed to add model");
       }
 
-      setModels((prev) => [data.model!, ...prev]);
+      setModels((prev) => [payload.model!, ...prev]);
       setForm({
+        id: "",
         name: "",
         provider: "",
-        providerCostPer1k: "",
+        costPer1kInput: "",
+        costPer1kOutput: "",
         markupPct: "30",
+        enabled: true,
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create model");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Failed to add model");
     } finally {
       setAddPending(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] px-4 py-8 text-gray-100 sm:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-white">Model Config + Margin</h1>
-          <p className="mt-2 text-sm text-gray-400">
-            Manage provider cost, markup, and model availability. User price is calculated automatically.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold text-white">Model Management</h1>
+        <p className="mt-1 text-sm text-gray-400">Edit input/output pricing and markup inline.</p>
+      </header>
 
-        <form
-          onSubmit={handleAddModel}
-          className="grid gap-3 rounded-xl border border-[#1d1d2c] bg-[#10101a] p-4 md:grid-cols-[2fr_1fr_1fr_1fr_auto]"
+      <form
+        onSubmit={handleAddModel}
+        className="grid gap-3 rounded-xl border border-[#1d1d2c] bg-[#11111a] p-4 md:grid-cols-[1.3fr_1.3fr_1fr_1fr_1fr_auto_auto]"
+      >
+        <input
+          type="text"
+          value={form.id}
+          onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))}
+          placeholder="Model ID (optional)"
+          className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-gray-100"
+        />
+        <input
+          type="text"
+          value={form.name}
+          onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+          placeholder="Model name"
+          className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-gray-100"
+        />
+        <input
+          type="text"
+          value={form.provider}
+          onChange={(event) => setForm((prev) => ({ ...prev, provider: event.target.value }))}
+          placeholder="Provider"
+          className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-gray-100"
+        />
+        <input
+          type="number"
+          min="0"
+          step="0.000001"
+          value={form.costPer1kInput}
+          onChange={(event) => setForm((prev) => ({ ...prev, costPer1kInput: event.target.value }))}
+          placeholder="Cost /1K Input"
+          className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-gray-100"
+        />
+        <input
+          type="number"
+          min="0"
+          step="0.000001"
+          value={form.costPer1kOutput}
+          onChange={(event) => setForm((prev) => ({ ...prev, costPer1kOutput: event.target.value }))}
+          placeholder="Cost /1K Output"
+          className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-gray-100"
+        />
+        <input
+          type="number"
+          min="0"
+          max="1000"
+          value={form.markupPct}
+          onChange={(event) => setForm((prev) => ({ ...prev, markupPct: event.target.value }))}
+          placeholder="Markup %"
+          className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-gray-100"
+        />
+        <button
+          type="submit"
+          disabled={addPending}
+          className="rounded-md bg-[#2d6cdf] px-4 py-2 text-sm font-medium text-white hover:bg-[#2258b7] disabled:opacity-60"
         >
-          <input
-            className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-white outline-none ring-[#46466a] placeholder:text-gray-500 focus:ring-2"
-            placeholder="Model name"
-            value={form.name}
-            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-          />
-          <input
-            className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-white outline-none ring-[#46466a] placeholder:text-gray-500 focus:ring-2"
-            placeholder="Provider"
-            value={form.provider}
-            onChange={(event) => setForm((prev) => ({ ...prev, provider: event.target.value }))}
-          />
-          <input
-            type="number"
-            min="0"
-            step="0.000001"
-            className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-white outline-none ring-[#46466a] placeholder:text-gray-500 focus:ring-2"
-            placeholder="Cost / 1K (USD)"
-            value={form.providerCostPer1k}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, providerCostPer1k: event.target.value }))
-            }
-          />
-          <input
-            type="number"
-            min="0"
-            max="500"
-            step="1"
-            className="rounded-md border border-[#27273a] bg-[#0d0d14] px-3 py-2 text-sm text-white outline-none ring-[#46466a] placeholder:text-gray-500 focus:ring-2"
-            placeholder="Markup %"
-            value={form.markupPct}
-            onChange={(event) => setForm((prev) => ({ ...prev, markupPct: event.target.value }))}
-          />
-          <button
-            type="submit"
-            disabled={addPending}
-            className="rounded-md bg-[#2d6cdf] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2258b7] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {addPending ? "Adding..." : "Add model"}
-          </button>
-        </form>
+          {addPending ? "Adding..." : "Add"}
+        </button>
+      </form>
 
-        {error && (
-          <p className="rounded-md border border-red-800/70 bg-red-950/30 px-3 py-2 text-sm text-red-200">
-            {error}
-          </p>
-        )}
+      {error && (
+        <p className="rounded-md border border-red-900/60 bg-red-950/30 px-3 py-2 text-sm text-red-200">
+          {error}
+        </p>
+      )}
 
-        <div className="overflow-x-auto rounded-xl border border-[#1d1d2c] bg-[#10101a]">
+      {loading ? (
+        <p className="text-sm text-gray-400">Loading models...</p>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-[#1d1d2c] bg-[#11111a]">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-[#1d1d2c] bg-[#131320] text-xs uppercase tracking-wide text-gray-400">
               <tr>
-                <th className="px-4 py-3 font-medium">Model</th>
+                <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Provider</th>
-                <th className="px-4 py-3 font-medium">Provider Cost / 1K</th>
+                <th className="px-4 py-3 font-medium">Cost / 1K Input</th>
+                <th className="px-4 py-3 font-medium">Cost / 1K Output</th>
                 <th className="px-4 py-3 font-medium">Markup %</th>
-                <th className="px-4 py-3 font-medium">User Price / 1K</th>
-                <th className="px-4 py-3 font-medium">Revenue (24h)</th>
-                <th className="px-4 py-3 font-medium">Revenue (7d)</th>
                 <th className="px-4 py-3 font-medium">Enabled</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
+                <th className="px-4 py-3 font-medium">User Price / 1K In</th>
+                <th className="px-4 py-3 font-medium">User Price / 1K Out</th>
+                <th className="px-4 py-3 font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
-              {sortedModels.map((model) => (
-                <tr key={model.id} className="border-b border-[#1d1d2c] last:border-0">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-white">{model.name}</div>
-                    <div className="text-xs text-gray-500">{model.id}</div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-300">{model.provider}</td>
-                  <td className="px-4 py-3 text-gray-300">{formatUsd(model.providerCostPer1k)}</td>
-                  <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      max="500"
-                      step="1"
-                      defaultValue={model.markupPct}
-                      onBlur={(event) => {
-                        void handleMarkupBlur(model, event.currentTarget.value);
-                      }}
-                      disabled={Boolean(pendingById[model.id])}
-                      className="w-24 rounded-md border border-[#27273a] bg-[#0d0d14] px-2 py-1 text-gray-100 outline-none ring-[#46466a] focus:ring-2 disabled:opacity-50"
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-gray-300">{formatUsd(model.userPricePer1k)}</td>
-                  <td className="px-4 py-3 text-gray-300">{formatUsdFromCents(model.dailyRevenueCents)}</td>
-                  <td className="px-4 py-3 text-gray-300">{formatUsdFromCents(model.weeklyRevenueCents)}</td>
-                  <td className="px-4 py-3">
-                    <label className="inline-flex items-center gap-2 text-gray-300">
+              {sortedModels.map((model) => {
+                const busy = Boolean(pendingById[model.id]);
+
+                return (
+                  <tr key={model.id} className="border-t border-[#1d1d2c] text-gray-200">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-white">{model.name}</p>
+                      <p className="text-xs text-gray-500">{model.id}</p>
+                    </td>
+                    <td className="px-4 py-3">{model.provider}</td>
+                    <td className="px-4 py-3">
                       <input
-                        type="checkbox"
-                        checked={model.enabled}
-                        onChange={(event) => {
-                          void handleToggle(model, event.currentTarget.checked);
-                        }}
-                        disabled={Boolean(pendingById[model.id])}
-                        className="h-4 w-4 accent-[#2d6cdf] disabled:opacity-50"
+                        type="number"
+                        min="0"
+                        step="0.000001"
+                        value={asInputValue(model.costPer1kInput)}
+                        onChange={(event) =>
+                          patchLocalModel(model.id, {
+                            costPer1kInput: Number(event.target.value),
+                          })
+                        }
+                        className="w-28 rounded-md border border-[#27273a] bg-[#0d0d14] px-2 py-1 text-gray-100"
                       />
-                      {model.enabled ? "On" : "Off"}
-                    </label>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void handleDelete(model);
-                      }}
-                      disabled={Boolean(pendingById[model.id])}
-                      className="rounded-md border border-red-900/70 bg-red-950/30 px-3 py-1 text-xs font-medium text-red-200 transition hover:bg-red-900/50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.000001"
+                        value={asInputValue(model.costPer1kOutput)}
+                        onChange={(event) =>
+                          patchLocalModel(model.id, {
+                            costPer1kOutput: Number(event.target.value),
+                          })
+                        }
+                        className="w-28 rounded-md border border-[#27273a] bg-[#0d0d14] px-2 py-1 text-gray-100"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <input
+                        type="number"
+                        min="0"
+                        max="1000"
+                        value={asInputValue(model.markupPct)}
+                        onChange={(event) =>
+                          patchLocalModel(model.id, {
+                            markupPct: Number(event.target.value),
+                          })
+                        }
+                        className="w-24 rounded-md border border-[#27273a] bg-[#0d0d14] px-2 py-1 text-gray-100"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                          model.enabled
+                            ? "bg-emerald-500/20 text-emerald-200"
+                            : "bg-gray-500/20 text-gray-200"
+                        }`}
+                      >
+                        {model.enabled ? "Enabled" : "Disabled"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-emerald-300">
+                      {formatUsd(userPrice(model.costPer1kInput, model.markupPct))}
+                    </td>
+                    <td className="px-4 py-3 text-emerald-300">
+                      {formatUsd(userPrice(model.costPer1kOutput, model.markupPct))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void saveRow(model);
+                        }}
+                        disabled={busy}
+                        className="rounded-md border border-[#3f3f62] px-3 py-1 text-xs text-gray-200 hover:bg-[#1a1a2b] disabled:opacity-60"
+                      >
+                        {busy ? "Saving..." : "Save"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
               {sortedModels.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
@@ -323,7 +408,7 @@ export default function ModelsAdminClient({ initialModels }: Props) {
             </tbody>
           </table>
         </div>
-      </div>
+      )}
     </div>
   );
 }
