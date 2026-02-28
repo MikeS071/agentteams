@@ -79,7 +79,7 @@ export async function POST(request: Request) {
             currency: "usd",
             unit_amount: amount * 100,
             product_data: {
-              name: `AgentTeams Credits ($${amount})`,
+              name: `AgentSquads Credits ($${amount})`,
             },
           },
         },
