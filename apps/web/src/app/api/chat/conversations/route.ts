@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import { checkFeatureAccess } from "@/lib/feature-policies";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -11,6 +12,11 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.tenantId) {
     return unauthorized();
+  }
+
+  const featureAccess = await checkFeatureAccess(session.user.tenantId, "webchat");
+  if (featureAccess) {
+    return featureAccess;
   }
 
   const conversations = await pool.query<{
