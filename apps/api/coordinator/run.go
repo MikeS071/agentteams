@@ -10,18 +10,26 @@ import (
 )
 
 // Run executes a full swarm run: decompose → spawn → monitor → collect → merge.
-func (c *Coordinator) Run(ctx context.Context, task string) (*SwarmRun, error) {
+func (c *Coordinator) Run(ctx context.Context, task string, runID string, channelCtx *ChannelContext, onEvent func(RunEvent)) (*SwarmRun, error) {
 	subtasks, err := Decompose(task)
 	if err != nil {
 		return nil, fmt.Errorf("decompose: %w", err)
 	}
 
+	if runID == "" {
+		runID = uuid.New().String()[:8]
+	}
+
 	run := &SwarmRun{
-		RunID:    uuid.New().String()[:8],
-		TenantID: c.TenantID,
-		Task:     task,
-		Status:   "running",
-		SubTasks: subtasks,
+		RunID:          runID,
+		TenantID:       c.TenantID,
+		Task:           task,
+		Status:         "running",
+		ChannelContext: channelCtx,
+		SubTasks:       subtasks,
+	}
+	if channelCtx != nil {
+		run.SourceChannel = channelCtx.Channel
 	}
 
 	slog.Info("starting swarm run", "run", run.RunID, "tenant", c.TenantID, "subtasks", len(subtasks))
@@ -40,11 +48,25 @@ func (c *Coordinator) Run(ctx context.Context, task string) (*SwarmRun, error) {
 			queue = 1 // remaining are queued
 			break
 		}
-		if err := c.SpawnAgent(st); err != nil {
+		if err := c.SpawnAgent(st, channelCtx); err != nil {
 			slog.Error("failed to spawn agent", "subtask", st.ID, "err", err)
 			st.Status = "failed"
+			emitEvent(onEvent, RunEvent{
+				Type:      "subtask_update",
+				RunID:     run.RunID,
+				SubTaskID: st.ID,
+				Status:    st.Status,
+				Message:   "Failed to spawn sub-agent.",
+			})
 		} else {
 			running++
+			emitEvent(onEvent, RunEvent{
+				Type:      "subtask_started",
+				RunID:     run.RunID,
+				SubTaskID: st.ID,
+				Status:    st.Status,
+				Message:   "Sub-agent started.",
+			})
 		}
 		queue++
 	}
@@ -67,16 +89,37 @@ func (c *Coordinator) Run(ctx context.Context, task string) (*SwarmRun, error) {
 				completed.Output = output
 			}
 		}
+		emitEvent(onEvent, RunEvent{
+			Type:      "subtask_update",
+			RunID:     run.RunID,
+			SubTaskID: completed.ID,
+			Status:    completed.Status,
+			Message:   fmt.Sprintf("Subtask %s is %s.", completed.ID, completed.Status),
+		})
 
 		// Spawn next queued task if available
 		for nextIdx < len(ptrs) && running < c.MaxAgents {
 			st := ptrs[nextIdx]
 			nextIdx++
-			if err := c.SpawnAgent(st); err != nil {
+			if err := c.SpawnAgent(st, channelCtx); err != nil {
 				slog.Error("failed to spawn queued agent", "subtask", st.ID, "err", err)
 				st.Status = "failed"
+				emitEvent(onEvent, RunEvent{
+					Type:      "subtask_update",
+					RunID:     run.RunID,
+					SubTaskID: st.ID,
+					Status:    st.Status,
+					Message:   "Failed to spawn queued sub-agent.",
+				})
 			} else {
 				running++
+				emitEvent(onEvent, RunEvent{
+					Type:      "subtask_started",
+					RunID:     run.RunID,
+					SubTaskID: st.ID,
+					Status:    st.Status,
+					Message:   "Queued sub-agent started.",
+				})
 			}
 		}
 	}
@@ -107,4 +150,10 @@ func (c *Coordinator) Run(ctx context.Context, task string) (*SwarmRun, error) {
 
 	slog.Info("swarm run finished", "run", run.RunID, "status", run.Status)
 	return run, nil
+}
+
+func emitEvent(onEvent func(RunEvent), evt RunEvent) {
+	if onEvent != nil {
+		onEvent(evt)
+	}
 }

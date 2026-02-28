@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -14,7 +15,7 @@ import (
 const workspaceBase = "/workspace/swarm"
 
 // SpawnAgent creates a tmux session for a sub-task and launches its worker.
-func (c *Coordinator) SpawnAgent(subtask *SubTask) error {
+func (c *Coordinator) SpawnAgent(subtask *SubTask, channelCtx *ChannelContext) error {
 	dir := filepath.Join(workspaceBase, subtask.ID)
 	if err := os.MkdirAll(filepath.Join(dir, "output"), 0o755); err != nil {
 		return fmt.Errorf("create workspace dir: %w", err)
@@ -23,6 +24,9 @@ func (c *Coordinator) SpawnAgent(subtask *SubTask) error {
 	// Write task brief
 	if err := os.WriteFile(filepath.Join(dir, "TASK.md"), []byte(subtask.Brief), 0o644); err != nil {
 		return fmt.Errorf("write task brief: %w", err)
+	}
+	if err := writeChannelContextFile(dir, channelCtx); err != nil {
+		return err
 	}
 
 	sessionName := fmt.Sprintf("agent-%s", subtask.ID)
@@ -43,6 +47,20 @@ func (c *Coordinator) SpawnAgent(subtask *SubTask) error {
 	}
 
 	slog.Info("spawned sub-agent", "tenant", c.TenantID, "subtask", subtask.ID, "session", sessionName)
+	return nil
+}
+
+func writeChannelContextFile(dir string, ctx *ChannelContext) error {
+	if ctx == nil {
+		return nil
+	}
+	encoded, err := json.MarshalIndent(ctx, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal channel context: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "CHANNEL_CONTEXT.json"), encoded, 0o644); err != nil {
+		return fmt.Errorf("write channel context: %w", err)
+	}
 	return nil
 }
 
