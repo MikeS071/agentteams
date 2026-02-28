@@ -1,6 +1,5 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import pool from "@/lib/db";
 
 export async function getAdminSession() {
   const session = await getServerSession(authOptions);
@@ -9,13 +8,7 @@ export async function getAdminSession() {
     return null;
   }
 
-  const adminResult = await pool.query<{ is_admin: boolean; deleted_at: string | null }>(
-    "SELECT is_admin, deleted_at FROM users WHERE id = $1",
-    [session.user.id]
-  );
-
-  const adminRow = adminResult.rows[0];
-  if (!adminRow || !adminRow.is_admin || adminRow.deleted_at) {
+  if (!session.user.isAdmin) {
     return null;
   }
 
@@ -28,20 +21,14 @@ export type AdminAuthResult =
 
 export async function requireAdmin(): Promise<AdminAuthResult> {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
 
-  if (!userId) {
+  if (!session?.user?.id) {
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  const result = await pool.query<{ is_admin: boolean }>(
-    "SELECT is_admin FROM users WHERE id = $1",
-    [userId]
-  );
-
-  if (result.rows.length === 0 || !result.rows[0].is_admin) {
+  if (!session.user.isAdmin) {
     return { ok: false, status: 403, error: "Forbidden" };
   }
 
-  return { ok: true, userId };
+  return { ok: true, userId: session.user.id };
 }

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agentteams/api/orchestrator"
+	"github.com/agentsquads/api/orchestrator"
 )
 
 // Proxy is the LLM proxy handler.
@@ -67,6 +67,8 @@ type chatChoice struct {
 	Message      chatMessage `json:"message"`
 	FinishReason string      `json:"finish_reason"`
 }
+
+
 
 type usageInfo struct {
 	PromptTokens     int `json:"prompt_tokens"`

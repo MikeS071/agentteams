@@ -5,7 +5,7 @@ WORKDIR /app
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/package.json
-RUN pnpm install --frozen-lockfile --filter @agentteams/web
+RUN pnpm install --frozen-lockfile --filter @agentsquads/web
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
