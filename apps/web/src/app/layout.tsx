@@ -15,9 +15,9 @@ export const metadata: Metadata = {
     siteName: "AgentSquads",
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
+        url: "/images/coder.png",
+        width: 1024,
+        height: 1024,
         alt: "AgentSquads",
       },
     ],
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     title: "AgentSquads — Your AI Team, Ready to Work",
     description:
       "Deploy AI agents for research, coding, lead gen, and more. Pay per token, no subscriptions.",
-    images: ["/og-image.png"],
+    images: ["/images/coder.png"],
   },
 };
 
