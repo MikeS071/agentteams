@@ -1,6 +1,8 @@
 "use client";
 
-import CodeBlock from "@/components/CodeBlock";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 
 type ChatRole = "user" | "assistant" | "system";
 
@@ -8,52 +10,6 @@ type ChatMessageProps = {
   role: ChatRole;
   content: string;
 };
-
-type Segment =
-  | { type: "text"; content: string }
-  | { type: "code"; content: string; language?: string };
-
-function parseSegments(content: string): Segment[] {
-  const segments: Segment[] = [];
-  const regex = /```([a-zA-Z0-9_-]+)?\n?([\s\S]*?)```/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while (true) {
-    match = regex.exec(content);
-    if (!match) {
-      break;
-    }
-
-    if (match.index > lastIndex) {
-      segments.push({
-        type: "text",
-        content: content.slice(lastIndex, match.index),
-      });
-    }
-
-    segments.push({
-      type: "code",
-      language: match[1],
-      content: match[2].trimEnd(),
-    });
-
-    lastIndex = regex.lastIndex;
-  }
-
-  if (lastIndex < content.length) {
-    segments.push({
-      type: "text",
-      content: content.slice(lastIndex),
-    });
-  }
-
-  if (segments.length === 0) {
-    return [{ type: "text", content }];
-  }
-
-  return segments;
-}
 
 export default function ChatMessage({ role, content }: ChatMessageProps) {
   const isUser = role === "user";
@@ -63,18 +19,32 @@ export default function ChatMessage({ role, content }: ChatMessageProps) {
       <div
         className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm sm:max-w-[80%] ${
           isUser
-            ? "rounded-br-md bg-[#6c5ce7] text-white"
-            : "rounded-bl-md border border-[#23233a] bg-[#12121a] text-gray-100"
+            ? "rounded-br-md border border-[#2a2a2e] bg-[#151517] text-[#f5f5f6]"
+            : "rounded-bl-md border border-[#23233a] bg-[#0f1013] text-gray-100"
         }`}
       >
-        {parseSegments(content).map((segment, index) =>
-          segment.type === "code" ? (
-            <CodeBlock key={`code-${index}`} code={segment.content} language={segment.language} />
-          ) : (
-            <p key={`text-${index}`} className="whitespace-pre-wrap break-words">
-              {segment.content}
-            </p>
-          )
+        {isUser ? (
+          <p className="whitespace-pre-wrap break-words">{content}</p>
+        ) : (
+          <div className="chat-markdown break-words">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeHighlight]}
+              components={{
+                a: ({ href, ...props }) => (
+                  <a
+                    {...props}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="text-[#7ad4ff] underline decoration-[#2e7da3] underline-offset-2 hover:text-[#9ce2ff]"
+                  />
+                ),
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
         )}
       </div>
     </div>
