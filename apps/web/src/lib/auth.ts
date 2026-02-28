@@ -81,6 +81,14 @@ async function linkAccount(account: {
   );
 }
 
+async function readIsAdmin(userId: string): Promise<boolean> {
+  const result = await pool.query<{ is_admin: boolean }>(
+    "SELECT is_admin FROM users WHERE id = $1",
+    [userId]
+  );
+  return result.rows[0]?.is_admin ?? false;
+}
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
@@ -175,12 +183,19 @@ export const authOptions: NextAuthOptions = {
         const tenantId = await findOrCreateTenant(user.id, user.email);
         token.tenantId = tenantId;
       }
+      if (token.userId) {
+        token.isAdmin = await readIsAdmin(token.userId);
+      } else {
+        token.isAdmin = false;
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as Record<string, unknown>).id = token.userId;
         (session.user as Record<string, unknown>).tenantId = token.tenantId;
+        (session.user as Record<string, unknown>).isAdmin =
+          token.isAdmin ?? false;
       }
       return session;
     },

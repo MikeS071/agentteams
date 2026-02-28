@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { decrypt, encrypt } from "@/lib/crypto";
 import pool from "@/lib/db";
+import { checkFeatureAccess } from "@/lib/feature-policies";
 
 type VercelTokenResponse = {
   access_token?: string;
@@ -62,6 +63,10 @@ export async function GET(request: NextRequest) {
   const tenantId = session?.user?.tenantId;
   if (!tenantId) {
     return NextResponse.redirect(settingsUrl(request, { error: "unauthorized" }));
+  }
+  const featureAccess = await checkFeatureAccess(tenantId, "deploy");
+  if (featureAccess) {
+    return featureAccess;
   }
 
   const providerError = request.nextUrl.searchParams.get("error");
