@@ -118,7 +118,7 @@ func (r *Router) Route(ctx context.Context, msg InboundMessage) (OutboundMessage
 	}
 
 	if assistantContent == "" {
-		assistantContent, err = r.generateAssistantResponse(ctx, normalized.TenantID, conversationID)
+		assistantContent, err = r.generateAssistantResponse(ctx, normalized.TenantID, conversationID, normalized.Metadata)
 		if err != nil {
 			return OutboundMessage{}, err
 		}
@@ -248,7 +248,7 @@ func conversationIDFromMetadata(metadata map[string]string) string {
 	return strings.TrimSpace(metadata["conversationId"])
 }
 
-func (r *Router) generateAssistantResponse(ctx context.Context, tenantID, conversationID string) (string, error) {
+func (r *Router) generateAssistantResponse(ctx context.Context, tenantID, conversationID string, metadata map[string]string) (string, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT role, content
 		 FROM (
@@ -286,7 +286,7 @@ func (r *Router) generateAssistantResponse(ctx context.Context, tenantID, conver
 	}
 
 	payloadBody, err := json.Marshal(map[string]any{
-		"model":    r.model,
+		"model":    resolveRequestModel(metadata, r.model),
 		"messages": messages,
 	})
 	if err != nil {
@@ -383,6 +383,13 @@ func resolveLLMProxyURL() string {
 		return base + "/chat/completions"
 	}
 	return base + "/v1/chat/completions"
+}
+
+func resolveRequestModel(metadata map[string]string, fallback string) string {
+	if m, ok := metadata["model"]; ok && strings.TrimSpace(m) != "" {
+		return strings.TrimSpace(m)
+	}
+	return fallback
 }
 
 func resolveModel() string {

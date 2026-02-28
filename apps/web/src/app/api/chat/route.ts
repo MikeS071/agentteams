@@ -41,6 +41,7 @@ export async function POST(req: Request) {
     z.object({
       conversationId: z.string().uuid().optional(),
       message: z.string().trim().min(1).max(4000),
+      model: z.string().optional(),
     })
   );
   if (!parsed.success) {
@@ -54,6 +55,9 @@ export async function POST(req: Request) {
   const conversationId = body.conversationId?.trim();
   if (conversationId) {
     metadata.conversation_id = conversationId;
+  }
+  if (body.model) {
+    metadata.model = body.model;
   }
 
   const apiBaseURL = process.env.API_URL ?? "http://localhost:8080";

@@ -96,7 +96,7 @@ export default function ChatPage() {
   }, [messages, replyLoading]);
 
   const handleSend = useCallback(
-    async (text: string) => {
+    async (text: string, model?: string) => {
       const nextUserMessage: Message = { role: "user", content: text };
       setMessages((prev) => [...prev, nextUserMessage]);
       setReplyLoading(true);
@@ -111,6 +111,7 @@ export default function ChatPage() {
           body: JSON.stringify({
             conversationId,
             message: text,
+            model,
           }),
         });
 
