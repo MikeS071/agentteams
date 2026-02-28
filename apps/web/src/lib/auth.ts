@@ -117,11 +117,14 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
         const res = await pool.query(
-          "SELECT id, email, name, image, password_hash FROM users WHERE email = $1",
+          `SELECT id, email, name, image, password_hash, suspended_at, deleted_at
+           FROM users
+           WHERE email = $1`,
           [credentials.email]
         );
         const user = res.rows[0];
         if (!user || !user.password_hash) return null;
+        if (user.suspended_at || user.deleted_at) return null;
         const valid = await bcrypt.compare(
           credentials.password,
           user.password_hash
@@ -138,11 +141,14 @@ export const authOptions: NextAuthOptions = {
       // Upsert user for OAuth providers
       if (account && account.type === "oauth") {
         const existing = await pool.query(
-          "SELECT id FROM users WHERE email = $1",
+          "SELECT id, suspended_at, deleted_at FROM users WHERE email = $1",
           [user.email]
         );
         let userId: string;
         if (existing.rows.length > 0) {
+          if (existing.rows[0].suspended_at || existing.rows[0].deleted_at) {
+            return false;
+          }
           userId = existing.rows[0].id;
         } else {
           const inserted = await pool.query(
