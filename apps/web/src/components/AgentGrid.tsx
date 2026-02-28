@@ -30,7 +30,7 @@ export default function AgentGrid({ agents, selectedAgentId, onSelect, onConfigu
           return (
             <div
               key={agent.id}
-              className={`group relative min-h-[140px] min-w-[140px] rounded-2xl border p-3 text-left transition ${
+              className={`group relative min-h-[90px] min-w-[120px] rounded-2xl border p-2.5 text-left transition ${
                 isActive
                   ? "border-[#2f8f5b] bg-[#102018] shadow-[0_0_0_1px_rgba(47,143,91,0.3)]"
                   : "border-[#26262f] bg-[#14141a] hover:border-[#3a3a44] hover:bg-[#181820]"
@@ -56,8 +56,8 @@ export default function AgentGrid({ agents, selectedAgentId, onSelect, onConfigu
               <div className="relative z-10 flex h-full flex-col pointer-events-none">
                 <div className="mb-2 text-2xl">{agent.icon}</div>
                 <p className="text-sm font-semibold text-gray-100">{agent.name}</p>
-                <p className="mt-1 line-clamp-2 text-xs text-gray-400">{agent.description}</p>
-                <div className="mt-auto flex items-center justify-between pt-3">
+                
+                <div className="mt-auto flex items-center justify-between pt-2">
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
                       isActive

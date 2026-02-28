@@ -119,7 +119,11 @@ export default function OnboardingPage() {
       return;
     }
     const timer = window.setTimeout(() => {
-      router.push("/dashboard");
+      // Save selected agent to localStorage so chat page picks it up
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("openfang:selected-agent", primaryAgentId);
+      }
+      router.push("/dashboard/chat");
     }, 2000);
     return () => window.clearTimeout(timer);
   }, [router, step]);

@@ -760,7 +760,7 @@ export default function ChatPage() {
   }, [lastAssistantMessage, replyLoading]);
 
   return (
-    <div className="relative flex h-full max-h-full min-h-0 bg-[#0a0a0b]">
+    <div className="relative flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0b]">
       {sidebarOpen && (
         <button
           type="button"

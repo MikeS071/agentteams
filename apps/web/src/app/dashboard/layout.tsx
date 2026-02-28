@@ -64,7 +64,7 @@ export default async function DashboardLayout({
   const featureMap = await getTenantFeatureMap(session.user.tenantId);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f] text-gray-100">
+    <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-gray-100">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-[#1d1d2c] bg-[#0d0d14] md:flex">
         <div className="border-b border-[#1d1d2c] px-5 py-4 text-lg font-semibold text-[#a29bfe]">AgentSquads</div>
         <nav className="flex flex-col gap-1 p-3">
