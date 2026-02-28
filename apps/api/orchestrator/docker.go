@@ -125,8 +125,8 @@ func (o *DockerOrchestrator) Create(ctx context.Context, tenantID string) (*Cont
 		},
 		&container.HostConfig{
 			Resources: container.Resources{
-				Memory:   memoryLimit,
-				CPUQuota: cpuQuota,
+				Memory:    memoryLimit,
+				CPUQuota:  cpuQuota,
 				CPUPeriod: cpuPeriod,
 			},
 			RestartPolicy: container.RestartPolicy{Name: "unless-stopped"},
@@ -150,6 +150,10 @@ func (o *DockerOrchestrator) Create(ctx context.Context, tenantID string) (*Cont
 	// Start the container
 	if err := o.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return nil, fmt.Errorf("container start: %w", err)
+	}
+
+	if err := injectConfig(ctx, o.cli, resp.ID, o.tenantConfigFor(tenantID)); err != nil {
+		return nil, fmt.Errorf("inject tenant config: %w", err)
 	}
 
 	// Inspect for IP
@@ -197,7 +201,13 @@ func (o *DockerOrchestrator) Start(ctx context.Context, tenantID string) error {
 		return err
 	}
 	o.log.Info("starting container", "tenant", tenantID)
-	return o.cli.ContainerStart(ctx, cid, container.StartOptions{})
+	if err := o.cli.ContainerStart(ctx, cid, container.StartOptions{}); err != nil {
+		return err
+	}
+	if err := injectConfig(ctx, o.cli, cid, o.tenantConfigFor(tenantID)); err != nil {
+		return fmt.Errorf("inject tenant config: %w", err)
+	}
+	return nil
 }
 
 // Stop stops a tenant container.

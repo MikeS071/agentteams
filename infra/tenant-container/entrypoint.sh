@@ -1,22 +1,20 @@
 #!/bin/bash
-# Placeholder entrypoint — will be replaced with `openfang start`
+set -euo pipefail
+
+CONFIG_DIR="/root/.openfang"
+CONFIG_PATH="${CONFIG_DIR}/config.toml"
+READY_PATH="${CONFIG_DIR}/config.ready"
+
 echo "AgentTeams tenant container starting..."
-echo "TENANT_ID: ${TENANT_ID}"
+echo "TENANT_ID: ${TENANT_ID:-}"
 
-# Start simple health server using Node.js
-node -e "
-const http = require('http');
-const server = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200, {'Content-Type': 'application/json'});
-    res.end(JSON.stringify({status: 'healthy', tenant: process.env.TENANT_ID, uptime: process.uptime()}));
-  } else {
-    res.writeHead(404);
-    res.end('Not found');
-  }
-});
-server.listen(4200, () => console.log('Health endpoint on :4200'));
-" &
+mkdir -p "${CONFIG_DIR}"
+rm -f "${READY_PATH}"
 
-# Keep container alive
-exec tail -f /dev/null
+echo "Waiting for OpenFang config injection at ${CONFIG_PATH}..."
+until [[ -f "${CONFIG_PATH}" && -f "${READY_PATH}" ]]; do
+  sleep 0.2
+done
+
+echo "OpenFang config detected. Starting OpenFang..."
+exec openfang start
