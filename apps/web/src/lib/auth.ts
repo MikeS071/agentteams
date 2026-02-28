@@ -1,54 +1,17 @@
+import { compare } from "bcryptjs";
+import type { User } from "next-auth";
 import type { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
+import {
+  ensureStripeCustomer,
+  ensureTenantCredits,
+  ensureTenantRecord,
+  normalizeEmail,
+  provisionTenantContainer,
+} from "./auth-provisioning";
 import pool from "./db";
-
-const ALLOWED_EMAILS = new Set([
-  "michal.szalinski@gmail.com",
-]);
-import { getStripe } from "./stripe";
-
-async function findOrCreateTenant(
-  userId: string,
-  email?: string | null
-): Promise<string> {
-  const existing = await pool.query(
-    "SELECT id FROM tenants WHERE user_id = $1",
-    [userId]
-  );
-  if (existing.rows.length > 0) {
-    return existing.rows[0].id;
-  }
-
-  const tenant = await pool.query(
-    "INSERT INTO tenants (user_id, status) VALUES ($1, 'active') RETURNING id",
-    [userId]
-  );
-  const tenantId = tenant.rows[0].id;
-
-  // Free tier signup bonus: store as 1000 cents ($10 equivalent)
-  await pool.query(
-    "INSERT INTO credits (tenant_id, balance_cents, free_credit_used) VALUES ($1, 1000, false)",
-    [tenantId]
-  );
-
-  if (email) {
-    try {
-      const stripe = getStripe();
-      const customer = await stripe.customers.create({
-        email,
-        metadata: { tenantId },
-      });
-      await pool.query(
-        "UPDATE users SET stripe_customer_id = $1 WHERE id = $2",
-        [customer.id, userId]
-      );
-    } catch {
-      // Stripe not configured — skip customer creation
-    }
-  }
-
-  return tenantId;
-}
 
 async function linkAccount(account: {
   userId: string;
@@ -91,6 +54,93 @@ async function readIsAdmin(userId: string): Promise<boolean> {
   return result.rows[0]?.is_admin ?? false;
 }
 
+type UserWithTenantId = User & { tenantId?: string };
+
+type UserStatusRow = {
+  suspended_at: string | null;
+  deleted_at: string | null;
+};
+
+type CredentialUserRow = {
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | null;
+  password_hash: string | null;
+  suspended_at: string | null;
+  deleted_at: string | null;
+};
+
+async function ensureAuthUserIsActive(userId: string): Promise<boolean> {
+  const result = await pool.query<UserStatusRow>(
+    "SELECT suspended_at, deleted_at FROM users WHERE id = $1",
+    [userId]
+  );
+
+  if (result.rows.length === 0) {
+    return false;
+  }
+
+  const row = result.rows[0];
+  return !row.suspended_at && !row.deleted_at;
+}
+
+async function upsertOAuthUser(user: User): Promise<string | null> {
+  if (!user.email) {
+    return null;
+  }
+
+  const email = normalizeEmail(user.email);
+  if (!email) {
+    return null;
+  }
+
+  const existing = await pool.query<{
+    id: string;
+    suspended_at: string | null;
+    deleted_at: string | null;
+  }>(
+    "SELECT id, suspended_at, deleted_at FROM users WHERE email = $1",
+    [email]
+  );
+
+  if (existing.rows.length > 0) {
+    const row = existing.rows[0];
+    if (row.suspended_at || row.deleted_at) {
+      return null;
+    }
+    await pool.query(
+      "UPDATE users SET name = COALESCE($1, name), image = COALESCE($2, image), email_verified = COALESCE(email_verified, NOW()) WHERE id = $3",
+      [user.name ?? null, user.image ?? null, row.id]
+    );
+    return row.id;
+  }
+
+  const inserted = await pool.query<{ id: string }>(
+    "INSERT INTO users (email, name, image, email_verified) VALUES ($1, $2, $3, NOW()) RETURNING id",
+    [email, user.name ?? null, user.image ?? null]
+  );
+  return inserted.rows[0].id;
+}
+
+async function ensureUserTenantSetup(
+  userId: string,
+  email?: string | null
+): Promise<string> {
+  const { tenantId, created } = await ensureTenantRecord(userId);
+  await ensureTenantCredits(tenantId);
+
+  if (email) {
+    await ensureStripeCustomer(userId, email);
+  }
+
+  if (created) {
+    await provisionTenantContainer(tenantId);
+  }
+
+  return tenantId;
+}
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
@@ -105,34 +155,65 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-    
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    }),
+    CredentialsProvider({
+      name: "Email and Password",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const rawEmail = credentials?.email;
+        const rawPassword = credentials?.password;
+
+        if (typeof rawEmail !== "string" || typeof rawPassword !== "string") {
+          return null;
+        }
+
+        const email = normalizeEmail(rawEmail);
+        if (!email || rawPassword.length < 8) {
+          return null;
+        }
+
+        const result = await pool.query<CredentialUserRow>(
+          `SELECT id, email, name, image, password_hash, suspended_at, deleted_at
+           FROM users
+           WHERE email = $1`,
+          [email]
+        );
+
+        const row = result.rows[0];
+        if (!row || row.suspended_at || row.deleted_at || !row.password_hash) {
+          return null;
+        }
+
+        const isValidPassword = await compare(rawPassword, row.password_hash);
+        if (!isValidPassword) {
+          return null;
+        }
+
+        return {
+          id: row.id,
+          email: row.email,
+          name: row.name,
+          image: row.image,
+        };
+      },
+    }),
   ],
   callbacks: {
     async signIn({ user, account }) {
-        if (!user.email || !ALLOWED_EMAILS.has(user.email)) {
-          return false;
-        }
       if (!user.email) return false;
 
-      // Upsert user for OAuth providers
       if (account && account.type === "oauth") {
-        const existing = await pool.query(
-          "SELECT id, suspended_at, deleted_at FROM users WHERE email = $1",
-          [user.email]
-        );
-        let userId: string;
-        if (existing.rows.length > 0) {
-          if (existing.rows[0].suspended_at || existing.rows[0].deleted_at) {
-            return false;
-          }
-          userId = existing.rows[0].id;
-        } else {
-          const inserted = await pool.query(
-            "INSERT INTO users (email, name, image, email_verified) VALUES ($1, $2, $3, NOW()) RETURNING id",
-            [user.email, user.name ?? null, user.image ?? null]
-          );
-          userId = inserted.rows[0].id;
+        const userId = await upsertOAuthUser(user);
+        if (!userId) {
+          return false;
         }
+
         user.id = userId;
         await linkAccount({
           userId,
@@ -149,14 +230,31 @@ export const authOptions: NextAuthOptions = {
         });
       }
 
+      if (!user.id) {
+        return false;
+      }
+
+      const isActive = await ensureAuthUserIsActive(user.id);
+      if (!isActive) {
+        return false;
+      }
+
+      const tenantId = await ensureUserTenantSetup(user.id, user.email);
+      (user as UserWithTenantId).tenantId = tenantId;
+
       return true;
     },
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
-        const tenantId = await findOrCreateTenant(user.id, user.email);
-        token.tenantId = tenantId;
+        const enrichedUser = user as UserWithTenantId;
+        token.tenantId =
+          enrichedUser.tenantId ??
+          (await ensureUserTenantSetup(user.id, user.email));
+      } else if (token.userId && !token.tenantId) {
+        token.tenantId = await ensureUserTenantSetup(token.userId);
       }
+
       if (token.userId) {
         token.isAdmin = await readIsAdmin(token.userId);
       } else {
