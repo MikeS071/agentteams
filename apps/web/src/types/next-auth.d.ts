@@ -6,6 +6,7 @@ declare module "next-auth" {
     user: {
       id: string;
       tenantId: string;
+      isAdmin: boolean;
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -17,5 +18,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     userId: string;
     tenantId: string;
+    isAdmin: boolean;
   }
 }

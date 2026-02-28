@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import { checkFeatureAccess } from "@/lib/feature-policies";
 
 const DEPLOY_PROVIDERS = ["vercel", "supabase"] as const;
 type DeployProvider = (typeof DEPLOY_PROVIDERS)[number];
@@ -28,6 +29,10 @@ export async function GET() {
     const tenantId = await getTenantIdFromSession();
     if (!tenantId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const featureAccess = await checkFeatureAccess(tenantId, "deploy");
+    if (featureAccess) {
+      return featureAccess;
     }
 
     const result = await pool.query<ConnectionRow>(
@@ -59,6 +64,10 @@ export async function DELETE(request: NextRequest) {
     const tenantId = await getTenantIdFromSession();
     if (!tenantId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const featureAccess = await checkFeatureAccess(tenantId, "deploy");
+    if (featureAccess) {
+      return featureAccess;
     }
 
     let provider = request.nextUrl.searchParams.get("provider");

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { checkFeatureAccess } from "@/lib/feature-policies";
 
 type InboundResponse = {
   content?: string;
@@ -16,6 +17,15 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.tenantId) {
     return unauthorized();
+  }
+
+  const webchatAccess = await checkFeatureAccess(session.user.tenantId, "webchat");
+  if (webchatAccess) {
+    return webchatAccess;
+  }
+  const swarmAccess = await checkFeatureAccess(session.user.tenantId, "swarm");
+  if (swarmAccess) {
+    return swarmAccess;
   }
 
   let body: { conversationId?: string; message?: string };

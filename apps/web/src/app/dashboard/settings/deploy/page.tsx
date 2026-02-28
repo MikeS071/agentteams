@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import { getTenantFeatureMap } from "@/lib/feature-policies";
 
 const PROVIDERS = ["vercel", "supabase"] as const;
 type DeployProvider = (typeof PROVIDERS)[number];
@@ -60,6 +61,22 @@ export default async function DeploySettingsPage({
 
   if (!tenantId) {
     redirect("/login");
+  }
+
+  const featureMap = await getTenantFeatureMap(tenantId);
+  if (!featureMap.deploy) {
+    return (
+      <div className="h-full overflow-y-auto bg-[#0a0a0f] px-4 py-6 sm:px-6">
+        <div className="mx-auto w-full max-w-4xl">
+          <div className="rounded-xl border border-[#1f1f30] bg-[#11111a] p-6">
+            <h1 className="text-xl font-semibold text-gray-100">Deploy Integrations</h1>
+            <p className="mt-2 text-sm text-gray-400">
+              Feature not available on your plan.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   async function disconnectConnection(formData: FormData) {
