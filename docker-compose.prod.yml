@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_DB: agentteams
+      POSTGRES_USER: agentteams
+      POSTGRES_PASSWORD: agentteams-prod-2026
+    volumes:
+      - at-pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3004:3000"
+    environment:
+      DATABASE_URL: postgresql://agentteams:agentteams-prod-2026@postgres:5432/agentteams
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: https://agentsquads.ai
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  at-pgdata:
