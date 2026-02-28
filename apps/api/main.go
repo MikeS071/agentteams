@@ -13,10 +13,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/agentteams/api/billing"
 	"github.com/agentteams/api/channels"
 	"github.com/agentteams/api/coordinator"
 	"github.com/agentteams/api/llmproxy"
 	"github.com/agentteams/api/orchestrator"
+	"github.com/agentteams/api/routes"
 	"github.com/agentteams/api/terminal"
 	"github.com/agentteams/api/workflows"
 
@@ -95,6 +97,11 @@ func main() {
 				proxy.Mount(mux)
 				slog.Info("LLM proxy mounted")
 			}
+
+			creditService := billing.NewCreditService(db)
+			stripeService := billing.NewStripeService(creditService)
+			routes.MountBillingRoutes(mux, db, creditService, stripeService)
+			slog.Info("billing routes mounted")
 		}
 	} else {
 		slog.Warn("DATABASE_URL not set, LLM proxy and terminal disabled")

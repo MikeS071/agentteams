@@ -161,20 +161,35 @@ func (p *Proxy) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Bill
-	costCents := CalcCostCents(model, inputTokens, outputTokens)
-	if err := BillUsage(p.DB, tenantID, model.ID, inputTokens, outputTokens, costCents); err != nil {
-		slog.Error("billing failed", "err", err)
-		// Still return the response — billing is best-effort
-	} else {
-		remainingBalance, err := CheckCredits(p.DB, tenantID)
-		if err != nil {
-			slog.Error("post-billing credit check failed", "tenant", tenantID, "err", err)
-		} else if remainingBalance <= 0 {
+	if err := BillUsage(p.DB, tenantID, model.ID, inputTokens, outputTokens); err != nil {
+		if errors.Is(err, ErrInsufficientCredits) {
 			if err := PauseTenant(p.DB, p.Orch, tenantID); err != nil {
-				slog.Error("tenant auto-pause failed", "tenant", tenantID, "err", err)
-			} else {
-				slog.Info(fmt.Sprintf("tenant %s auto-paused: credits exhausted", tenantID))
+				slog.Error("tenant auto-pause failed after insufficient credits", "tenant", tenantID, "err", err)
 			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPaymentRequired)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"error": map[string]any{
+					"message": "Insufficient credits",
+					"type":    "billing_error",
+				},
+			})
+			return
+		}
+
+		slog.Error("billing failed", "tenant", tenantID, "model", model.ID, "err", err)
+		writeError(w, http.StatusInternalServerError, "billing error")
+		return
+	}
+
+	remainingBalance, err := CheckCredits(p.DB, tenantID)
+	if err != nil {
+		slog.Error("post-billing credit check failed", "tenant", tenantID, "err", err)
+	} else if remainingBalance <= 0 {
+		if err := PauseTenant(p.DB, p.Orch, tenantID); err != nil {
+			slog.Error("tenant auto-pause failed", "tenant", tenantID, "err", err)
+		} else {
+			slog.Info(fmt.Sprintf("tenant %s auto-paused: credits exhausted", tenantID))
 		}
 	}
 

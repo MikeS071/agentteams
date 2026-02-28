@@ -25,9 +25,17 @@ async function findOrCreateTenant(
   );
   const tenantId = tenant.rows[0].id;
 
-  // Free tier signup bonus: store as 1000 cents ($10 equivalent)
+  // Free tier signup bonus: store as 1000 cents ($10 equivalent) and track transaction.
   await pool.query(
-    "INSERT INTO credits (tenant_id, balance_cents, free_credit_used) VALUES ($1, 1000, false)",
+    `INSERT INTO credits (tenant_id, balance_cents, free_credit_used, updated_at)
+     VALUES ($1, 1000, false, NOW())
+     ON CONFLICT (tenant_id)
+     DO UPDATE SET balance_cents = credits.balance_cents + EXCLUDED.balance_cents, updated_at = NOW()`,
+    [tenantId]
+  );
+  await pool.query(
+    `INSERT INTO credit_transactions (tenant_id, amount_cents, reason, type, description)
+     VALUES ($1, 1000, 'signup_free_tier', 'grant', 'Signup free-tier grant')`,
     [tenantId]
   );
 
