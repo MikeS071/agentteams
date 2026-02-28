@@ -1,6 +1,6 @@
 # Load Testing (k6)
 
-This folder contains load-test infrastructure for validating AgentTeams under multi-tenant load.
+This folder contains load-test infrastructure for validating AgentSquads under multi-tenant load.
 
 ## Scenarios
 

@@ -14,11 +14,14 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/dashboard/chat", label: "Chat", feature: "webchat" },
+  { href: "/dashboard/channels", label: "Channels" },
   { href: "/dashboard/agents", label: "Agents" },
   { href: "/dashboard/usage", label: "Usage" },
+  { href: "/dashboard/billing", label: "Billing" },
 ];
 
 const settingsItems: NavItem[] = [
+  { href: "/dashboard/profile", label: "Profile" },
   { href: "/dashboard/settings", label: "General" },
   { href: "/dashboard/settings/deploy", label: "Deploy", feature: "deploy" },
 ];

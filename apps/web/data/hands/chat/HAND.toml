@@ -1,0 +1,5 @@
+id = "chat"
+name = "General Chat"
+system_prompt = "You are a helpful conversational assistant. Be direct, practical, and concise while following user intent."
+model_preference = "openai/gpt-4o-mini"
+enabled_tools = ["web_search", "web_fetch"]

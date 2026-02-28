@@ -1,7 +1,7 @@
 services:
   influxdb:
     image: influxdb:1.8
-    container_name: at-loadtest-influxdb
+    container_name: as-loadtest-influxdb
     ports:
       - "8086:8086"
     environment:
@@ -12,7 +12,7 @@ services:
 
   grafana:
     image: grafana/grafana:11.2.0
-    container_name: at-loadtest-grafana
+    container_name: as-loadtest-grafana
     depends_on:
       - influxdb
     ports:
@@ -28,7 +28,7 @@ services:
 
   k6:
     image: grafana/k6:0.52.0
-    container_name: at-loadtest-k6
+    container_name: as-loadtest-k6
     depends_on:
       - influxdb
     environment:

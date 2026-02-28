@@ -5,13 +5,13 @@ import 'nextra-theme-docs/style-prefixed.css';
 import './globals.css';
 
 export const metadata = {
-  metadataBase: new URL('https://docs.agentteams.dev'),
+  metadataBase: new URL('https://docs.agentsquads.dev'),
   title: {
-    default: 'AgentTeams Docs',
-    template: '%s | AgentTeams Docs'
+    default: 'AgentSquads Docs',
+    template: '%s | AgentSquads Docs'
   },
   description:
-    'Official AgentTeams documentation for channels, agents, workflows, swarm orchestration, deploy, billing, and API usage.'
+    'Official AgentSquads documentation for channels, agents, workflows, swarm orchestration, deploy, billing, and API usage.'
 };
 
 export default async function RootLayout({
@@ -31,18 +31,18 @@ export default async function RootLayout({
               logo={
                 <span className="flex items-center gap-2 font-semibold text-text">
                   <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent3 shadow-[0_0_18px_rgba(0,206,201,0.8)]" />
-                  AgentTeams Docs
+                  AgentSquads Docs
                 </span>
               }
             />
           }
           footer={
             <Footer>
-              AgentTeams © {new Date().getFullYear()} · Built for production AI agent operations
+              AgentSquads © {new Date().getFullYear()} · Built for production AI agent operations
             </Footer>
           }
           pageMap={pageMap}
-          docsRepositoryBase="https://github.com/agentteams/agentteams"
+          docsRepositoryBase="https://github.com/agentsquads/agentsquads"
           editLink={null}
           darkMode
           nextThemes={{

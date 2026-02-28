@@ -1,3 +1,5 @@
+export const maxDuration = 180;
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
@@ -10,6 +12,13 @@ type InboundResponse = {
   content?: string;
   conversation_id?: string;
   conversationId?: string;
+};
+
+type InboundRequestBody = {
+  tenant_id: string;
+  content: string;
+  channel: "web";
+  metadata: Record<string, string>;
 };
 
 function unauthorized() {
@@ -44,6 +53,8 @@ export async function POST(req: Request) {
       model: z.string().optional(),
       agentId: z.string().optional(),
       systemPrompt: z.string().max(8000).optional(),
+      enabledTools: z.array(z.string()).max(20).optional(),
+      stream: z.boolean().optional(),
     })
   );
   if (!parsed.success) {
@@ -67,24 +78,71 @@ export async function POST(req: Request) {
   if (body.systemPrompt) {
     metadata.system_prompt = body.systemPrompt;
   }
+  if (body.enabledTools && body.enabledTools.length > 0) {
+    metadata.enabled_tools = body.enabledTools.join(",");
+  }
 
   const apiBaseURL = process.env.API_URL ?? "http://localhost:8080";
+  const streamRequested = body.stream === true;
+  const inboundPayload: InboundRequestBody = {
+    tenant_id: session.user.tenantId,
+    content: message,
+    channel: "web",
+    metadata,
+  };
 
   try {
+    if (streamRequested) {
+      let streamRes: Response | null = null;
+      let streamTimeout: ReturnType<typeof setTimeout> | null = null;
+
+      try {
+        const controller = new AbortController();
+        streamTimeout = setTimeout(() => controller.abort(), 180000);
+        streamRes = await fetch(`${apiBaseURL}/api/channels/inbound/stream`, {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
+            ...buildServiceHeaders(),
+          },
+          body: JSON.stringify(inboundPayload),
+        });
+      } catch {
+        streamRes = null;
+      } finally {
+        if (streamTimeout) {
+          clearTimeout(streamTimeout);
+        }
+      }
+
+      const streamType = (streamRes?.headers.get("content-type") || "").toLowerCase();
+      if (streamRes?.ok && streamRes.body && streamType.includes("text/event-stream")) {
+        return new Response(streamRes.body, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+            Connection: "keep-alive",
+          },
+        });
+      }
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 180000);
     const inboundRes = await fetch(`${apiBaseURL}/api/channels/inbound`, {
       method: "POST",
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
         ...buildServiceHeaders(),
       },
-      body: JSON.stringify({
-        tenant_id: session.user.tenantId,
-        content: message,
-        channel: "web",
-        metadata,
-      }),
+      body: JSON.stringify(inboundPayload),
     });
 
+    clearTimeout(timeout);
     if (!inboundRes.ok) {
       const errText = await inboundRes.text();
       return NextResponse.json(

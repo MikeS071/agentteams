@@ -8,11 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/agentsquads/api/tools"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -57,21 +59,23 @@ type AgentBridge interface {
 
 // Router is the central inbound -> assistant -> outbound channel pipeline.
 type Router struct {
-	db          *sql.DB
-	redis       *redis.Client
-	httpClient  *http.Client
-	llmProxyURL string
-	model       string
-	agentBridge AgentBridge
+	db           *sql.DB
+	redis        *redis.Client
+	httpClient   *http.Client
+	llmProxyURL  string
+	model        string
+	agentBridge  AgentBridge
+	toolRegistry *tools.Registry
 }
 
 func NewRouter(db *sql.DB, redisClient *redis.Client) *Router {
 	return &Router{
-		db:          db,
-		redis:       redisClient,
-		httpClient:  &http.Client{Timeout: 120 * time.Second},
-		llmProxyURL: resolveLLMProxyURL(),
-		model:       resolveModel(),
+		db:           db,
+		redis:        redisClient,
+		httpClient:   &http.Client{Timeout: 120 * time.Second},
+		llmProxyURL:  resolveLLMProxyURL(),
+		model:        resolveModel(),
+		toolRegistry: tools.NewRegistry(),
 	}
 }
 
@@ -133,7 +137,7 @@ func (r *Router) Route(ctx context.Context, msg InboundMessage) (OutboundMessage
 		Content:        assistantContent,
 		Channel:        normalized.Channel,
 		ConversationID: conversationID,
-		Metadata:       outMetadata,
+		Metadata:       mergeMetadata(normalized.Metadata, outMetadata),
 	}
 
 	if err := r.publishResponse(ctx, out); err != nil {
@@ -266,17 +270,13 @@ func (r *Router) generateAssistantResponse(ctx context.Context, tenantID, conver
 	}
 	defer rows.Close()
 
-	type llmMessage struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-	}
-	messages := make([]llmMessage, 0, 50)
+	var messages []tools.Message
 	for rows.Next() {
 		var role, content string
 		if err := rows.Scan(&role, &content); err != nil {
 			return "", fmt.Errorf("scan context message: %w", err)
 		}
-		messages = append(messages, llmMessage{Role: role, Content: content})
+		messages = append(messages, tools.Message{Role: role, Content: content})
 	}
 	if err := rows.Err(); err != nil {
 		return "", fmt.Errorf("iterate context messages: %w", err)
@@ -287,11 +287,34 @@ func (r *Router) generateAssistantResponse(ctx context.Context, tenantID, conver
 
 	// Prepend system prompt from metadata (agent mode)
 	if sp, ok := metadata["system_prompt"]; ok && strings.TrimSpace(sp) != "" {
-		messages = append([]llmMessage{{Role: "system", Content: sp}}, messages...)
+		messages = append([]tools.Message{{Role: "system", Content: sp}}, messages...)
 	}
 
+	// Determine agent ID and get tools
+	agentID := strings.TrimSpace(metadata["agent_id"])
+	agentTools := r.toolRegistry.GetTools(agentID)
+
+	// Set up memory context scoped to this conversation
+	toolCtx := tools.WithMemoryContext(ctx, tenantID, conversationID)
+
+	model := resolveRequestModel(metadata, r.model)
+	serviceKey := strings.TrimSpace(os.Getenv("SERVICE_API_KEY"))
+
+	if len(agentTools) > 0 {
+		slog.Info("using tool loop", "agent", agentID, "tools", len(agentTools), "model", model)
+		return tools.RunToolLoop(toolCtx, r.toolRegistry, tools.LoopConfig{
+			LLMProxyURL:   r.llmProxyURL,
+			Model:         model,
+			TenantID:      tenantID,
+			ServiceAPIKey: serviceKey,
+			MaxIterations: 15,
+			HTTPClient:    r.httpClient,
+		}, messages, agentTools)
+	}
+
+	// Fallback: plain chat completion (no tools)
 	payloadBody, err := json.Marshal(map[string]any{
-		"model":    resolveRequestModel(metadata, r.model),
+		"model":    model,
 		"messages": messages,
 	})
 	if err != nil {
@@ -304,7 +327,7 @@ func (r *Router) generateAssistantResponse(ctx context.Context, tenantID, conver
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Tenant-ID", tenantID)
-	if serviceKey := strings.TrimSpace(os.Getenv("SERVICE_API_KEY")); serviceKey != "" {
+	if serviceKey != "" {
 		req.Header.Set("X-Service-API-Key", serviceKey)
 	}
 
@@ -403,4 +426,27 @@ func resolveModel() string {
 		return "gpt-4o-mini"
 	}
 	return model
+}
+
+func mergeMetadata(base map[string]string, extra map[string]string) map[string]string {
+	if len(base) == 0 && len(extra) == 0 {
+		return map[string]string{}
+	}
+
+	out := make(map[string]string, len(base)+len(extra))
+	for k, v := range base {
+		key := strings.TrimSpace(k)
+		if key == "" {
+			continue
+		}
+		out[key] = strings.TrimSpace(v)
+	}
+	for k, v := range extra {
+		key := strings.TrimSpace(k)
+		if key == "" {
+			continue
+		}
+		out[key] = strings.TrimSpace(v)
+	}
+	return out
 }

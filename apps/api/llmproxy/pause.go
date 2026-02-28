@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/agentteams/api/orchestrator"
+	"github.com/agentsquads/api/orchestrator"
 )
 
 // PauseTenant sets the tenant status to paused and stops the tenant container.

@@ -1,0 +1,9 @@
+-- Rename primary database from agentteams to agentsquads.
+-- Note: DB rename requires reconnect. This operation cannot run while connected to the target DB.
+--
+-- Manual step (run as a superuser from a different DB, e.g. `postgres`):
+--   ALTER DATABASE agentteams RENAME TO agentsquads;
+--
+-- After running the command above:
+-- 1. Reconnect all clients using the new DB name.
+-- 2. Ensure all DATABASE_URL / connection strings point to `agentsquads`.
