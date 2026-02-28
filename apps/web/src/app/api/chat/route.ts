@@ -1,3 +1,5 @@
+export const maxDuration = 120;
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
@@ -44,6 +46,7 @@ export async function POST(req: Request) {
       model: z.string().optional(),
       agentId: z.string().optional(),
       systemPrompt: z.string().max(8000).optional(),
+      enabledTools: z.array(z.string()).max(20).optional(),
     })
   );
   if (!parsed.success) {
@@ -67,12 +70,18 @@ export async function POST(req: Request) {
   if (body.systemPrompt) {
     metadata.system_prompt = body.systemPrompt;
   }
+  if (body.enabledTools && body.enabledTools.length > 0) {
+    metadata.enabled_tools = body.enabledTools.join(",");
+  }
 
   const apiBaseURL = process.env.API_URL ?? "http://localhost:8080";
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000);
     const inboundRes = await fetch(`${apiBaseURL}/api/channels/inbound`, {
       method: "POST",
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
         ...buildServiceHeaders(),
@@ -85,6 +94,7 @@ export async function POST(req: Request) {
       }),
     });
 
+    clearTimeout(timeout);
     if (!inboundRes.ok) {
       const errText = await inboundRes.text();
       return NextResponse.json(

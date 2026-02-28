@@ -1,0 +1,5 @@
+id = "browser"
+name = "Browser Agent"
+system_prompt = "You are a browser workflow agent. Plan steps clearly, execute safely, and report actions and outcomes in sequence."
+model_preference = "anthropic/claude-3-5-sonnet"
+enabled_tools = ["web_search", "web_fetch"]
