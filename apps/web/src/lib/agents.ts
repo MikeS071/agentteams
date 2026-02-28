@@ -3,6 +3,7 @@ export type AgentType = {
   name: string;
   icon: string;
   description: string;
+  image: string;
   systemPrompt: string;
   welcomeMessage: string;
   fields: AgentField[];
@@ -20,6 +21,7 @@ export type AgentField = {
 export const AGENTS: AgentType[] = [
   {
     id: "chat",
+    image: "",
     name: "General Chat",
     icon: "💬",
     description: "Freeform conversation with any model",
@@ -29,6 +31,7 @@ export const AGENTS: AgentType[] = [
   },
   {
     id: "research",
+    image: "/images/research.png",
     name: "Research Assistant",
     icon: "🔍",
     description: "Deep autonomous research with cited reports",
@@ -42,6 +45,7 @@ export const AGENTS: AgentType[] = [
   },
   {
     id: "coder",
+    image: "/images/coder.png",
     name: "Coder",
     icon: "👨‍💻",
     description: "Build and deploy apps with agent swarm",
@@ -55,6 +59,7 @@ export const AGENTS: AgentType[] = [
   },
   {
     id: "leadgen",
+    image: "/images/leadgen.png",
     name: "Lead Generator",
     icon: "🎯",
     description: "Find and qualify prospects matching your ICP",
@@ -68,6 +73,7 @@ export const AGENTS: AgentType[] = [
   },
   {
     id: "intel",
+    image: "/images/intel.png",
     name: "Intelligence Collector",
     icon: "🕵️",
     description: "OSINT monitoring, change detection, sentiment analysis",
@@ -81,6 +87,7 @@ export const AGENTS: AgentType[] = [
   },
   {
     id: "social",
+    image: "/images/social.png",
     name: "Social Manager",
     icon: "📱",
     description: "Content creation, scheduling, engagement tracking",
@@ -94,6 +101,7 @@ export const AGENTS: AgentType[] = [
   },
   {
     id: "browser",
+    image: "/images/browser.png",
     name: "Browser Agent",
     icon: "🌐",
     description: "Web automation, form filling, multi-step workflows",
@@ -106,6 +114,7 @@ export const AGENTS: AgentType[] = [
   },
   {
     id: "clip",
+    image: "/images/clip.png",
     name: "Clip Creator",
     icon: "🎬",
     description: "Turn videos into viral shorts with captions",
@@ -119,6 +128,7 @@ export const AGENTS: AgentType[] = [
   },
   {
     id: "predictor",
+    image: "/images/predictor.png",
     name: "Predictor",
     icon: "🔮",
     description: "Superforecasting with calibrated reasoning",

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ChatInput from "@/components/ChatInput";
 import ChatMessage from "@/components/ChatMessage";
-import AgentPicker from "@/components/AgentPicker";
 import AgentSetup from "@/components/AgentSetup";
 import { AGENTS, type AgentType } from "@/lib/agents";
 
@@ -22,15 +21,13 @@ function LoadingDots() {
   );
 }
 
-type Phase = "pick" | "setup" | "chat";
-
 export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  const [phase, setPhase] = useState<Phase>("pick");
   const [selectedAgent, setSelectedAgent] = useState<AgentType>(AGENTS[0]);
+  const [showSetup, setShowSetup] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,7 +40,7 @@ export default function ChatPage() {
 
   const loadConversations = useCallback(async () => {
     const res = await fetch("/api/chat/conversations", { cache: "no-store" });
-    if (!res.ok) throw new Error("Failed to load conversations");
+    if (!res.ok) throw new Error("Failed");
     const data = (await res.json()) as { conversations: Conversation[] };
     setConversations(data.conversations || []);
   }, []);
@@ -51,13 +48,13 @@ export default function ChatPage() {
   const loadHistory = useCallback(async (id: string) => {
     setHistoryLoading(true);
     setError(null);
+    setShowSetup(false);
     try {
       const res = await fetch(`/api/chat/history?conversationId=${id}`, { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to load chat history");
+      if (!res.ok) throw new Error("Failed");
       const data = (await res.json()) as { messages: Message[] };
       setMessages(data.messages || []);
       setConversationId(id);
-      setPhase("chat");
       setSidebarOpen(false);
     } catch {
       setError("Could not load this conversation.");
@@ -66,13 +63,8 @@ export default function ChatPage() {
     }
   }, []);
 
-  useEffect(() => { void loadConversations().catch(() => setError("Could not load conversations.")); }, [loadConversations]);
-
-  useEffect(() => {
-    if (activeConversationId) { void loadHistory(activeConversationId); return; }
-    // Don't reset phase if we're in agent selection flow
-  }, [activeConversationId, loadHistory]);
-
+  useEffect(() => { void loadConversations().catch(() => {}); }, [loadConversations]);
+  useEffect(() => { if (activeConversationId) void loadHistory(activeConversationId); }, [activeConversationId, loadHistory]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, replyLoading]);
 
   const handleSend = useCallback(
@@ -81,7 +73,6 @@ export default function ChatPage() {
       setMessages((prev) => [...prev, userMsg]);
       setReplyLoading(true);
       setError(null);
-
       try {
         const res = await fetch("/api/chat", {
           method: "POST",
@@ -94,20 +85,16 @@ export default function ChatPage() {
             systemPrompt: selectedAgent.id !== "chat" ? selectedAgent.systemPrompt : undefined,
           }),
         });
-
         const data = (await res.json()) as { error?: string; conversationId?: string; message?: Message };
-        if (!res.ok || !data.message || !data.conversationId) throw new Error(data.error || "Failed to send message");
-
+        if (!res.ok || !data.message || !data.conversationId) throw new Error(data.error || "Failed");
         if (conversationId !== data.conversationId) {
           setConversationId(data.conversationId);
           router.replace(`/dashboard/chat?conversationId=${data.conversationId}`);
         }
-
         setMessages((prev) => [...prev, data.message as Message]);
         await loadConversations();
       } catch {
-        setMessages((prev) => [...prev, { role: "assistant", content: "I couldn't process that request right now. Please try again." }]);
-        setError("Failed to send message.");
+        setMessages((prev) => [...prev, { role: "assistant", content: "I couldn't process that. Please try again." }]);
       } finally {
         setReplyLoading(false);
       }
@@ -115,23 +102,24 @@ export default function ChatPage() {
     [conversationId, loadConversations, router, selectedAgent]
   );
 
-  function handleAgentSelect(agent: AgentType) {
+  function handleAgentClick(agent: AgentType) {
     setSelectedAgent(agent);
     if (agent.fields.length === 0) {
-      // No setup needed (General Chat) — go straight to chat
-      setPhase("chat");
+      // General Chat — start immediately
+      setShowSetup(false);
       setConversationId(undefined);
       setMessages([{ role: "assistant", content: agent.welcomeMessage }]);
+      router.replace("/dashboard/chat");
     } else {
-      setPhase("setup");
+      setShowSetup(true);
     }
   }
 
   function handleAgentStart(context: string) {
-    setPhase("chat");
+    setShowSetup(false);
     setConversationId(undefined);
-    // Show welcome + auto-send the context as first user message
     setMessages([{ role: "assistant", content: selectedAgent.welcomeMessage }]);
+    router.replace("/dashboard/chat");
     void handleSend(context);
   }
 
@@ -139,80 +127,118 @@ export default function ChatPage() {
     setConversationId(undefined);
     setMessages([]);
     setError(null);
-    setSidebarOpen(false);
-    setPhase("pick");
+    setShowSetup(false);
+    setSelectedAgent(AGENTS[0]);
     router.replace("/dashboard/chat");
   }
 
+  const hasChat = messages.length > 0 || conversationId;
+
   return (
     <div className="relative flex h-full min-h-0 bg-[#0a0a0f]">
+      {/* Mobile sidebar toggle */}
       {sidebarOpen && (
         <button type="button" onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-20 bg-black/40 md:hidden" aria-label="Close" />
       )}
 
-      <aside className={`absolute inset-y-0 left-0 z-30 w-72 border-r border-[#1f1f2f] bg-[#0d0d15] transition-transform md:static md:z-0 md:w-80 md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      {/* Sidebar: conversations top, agents bottom */}
+      <aside className={`absolute inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-[#1f1f2f] bg-[#0d0d15] transition-transform md:static md:z-0 md:w-80 md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        {/* Top: Conversations */}
         <div className="flex items-center justify-between border-b border-[#1f1f2f] p-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300">Conversations</h2>
-          <button type="button" onClick={handleNewChat} className="rounded-md bg-[#6c5ce7] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90">New Chat</button>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Conversations</h2>
+          <button type="button" onClick={handleNewChat} className="rounded-md bg-[#6c5ce7] px-2.5 py-1 text-xs font-medium text-white hover:opacity-90">+ New</button>
         </div>
-        <div className="h-[calc(100%-57px)] overflow-y-auto p-2">
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {conversations.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-[#2a2a3d] px-3 py-4 text-sm text-gray-500">No conversations yet.</p>
+            <p className="px-2 py-3 text-xs text-gray-600">No conversations yet</p>
           ) : (
             conversations.map((c) => (
               <button key={c.id} type="button"
                 onClick={() => { setSidebarOpen(false); router.replace(`/dashboard/chat?conversationId=${c.id}`); }}
-                className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm ${c.id === conversationId ? "bg-[#18182a] text-gray-100" : "text-gray-400 hover:bg-[#141422] hover:text-gray-200"}`}
+                className={`mb-0.5 w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${c.id === conversationId ? "bg-[#18182a] text-gray-100" : "text-gray-400 hover:bg-[#141422] hover:text-gray-200"}`}
               >
                 <p className="truncate">{c.preview}</p>
               </button>
             ))
           )}
         </div>
+
+        {/* Bottom: Agent grid */}
+        <div className="border-t border-[#1f1f2f]">
+          <div className="p-3 pb-1">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Agents</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-2 overflow-y-auto p-2 pt-1" style={{ maxHeight: "380px" }}>
+            {AGENTS.map((agent) => (
+              <button
+                key={agent.id}
+                type="button"
+                onClick={() => handleAgentClick(agent)}
+                className={`group relative overflow-hidden rounded-xl border transition-all ${
+                  selectedAgent.id === agent.id
+                    ? "border-[#6c5ce7] ring-1 ring-[#6c5ce7]/50"
+                    : "border-[#1f1f2f] hover:border-[#3a3a5d]"
+                }`}
+              >
+                {agent.image ? (
+                  <div className="relative">
+                    <img
+                      src={agent.image}
+                      alt={agent.name}
+                      className="h-20 w-full object-cover opacity-70 transition-opacity group-hover:opacity-100"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d15] via-transparent to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-2">
+                      <p className="text-xs font-semibold text-white">{agent.name}</p>
+                    </div>
+                    {/* Accent bar on hover */}
+                    <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#6c5ce7] to-[#a855f7] opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
+                ) : (
+                  <div className="flex h-20 flex-col items-center justify-center gap-1 bg-[#12121a]">
+                    <span className="text-xl">{agent.icon}</span>
+                    <p className="text-xs font-semibold text-gray-300">{agent.name}</p>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </aside>
 
+      {/* Main content */}
       <section className="flex min-w-0 flex-1 flex-col">
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-[#1f1f2f] px-3 py-2">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => setSidebarOpen((o) => !o)} className="rounded-md border border-[#2a2a3d] px-3 py-1.5 text-sm text-gray-200 md:hidden">Menu</button>
-            {phase === "chat" && (
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <span>{selectedAgent.icon}</span>
-                <span className="font-medium text-gray-200">{selectedAgent.name}</span>
-                <button type="button" onClick={handleNewChat} className="ml-2 rounded border border-[#2a2a3d] px-2 py-0.5 text-xs text-gray-500 hover:text-white">Change</button>
-              </div>
-            )}
-          </div>
-          <button type="button" onClick={handleNewChat} className="rounded-md bg-[#6c5ce7] px-3 py-1.5 text-sm text-white md:hidden">New</button>
-        </div>
-
-        {phase === "pick" && (
-          <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
-            <div className="w-full max-w-2xl space-y-6">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-white">Choose an Agent</h1>
-                <p className="mt-1 text-sm text-gray-400">Pick a specialist or start a freeform chat</p>
-              </div>
-              <AgentPicker selected={selectedAgent.id} onSelect={handleAgentSelect} />
+            <button type="button" onClick={() => setSidebarOpen((o) => !o)} className="rounded-md border border-[#2a2a3d] px-3 py-1.5 text-sm text-gray-200 md:hidden">☰</button>
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <span>{selectedAgent.icon}</span>
+              <span className="font-medium text-gray-200">{selectedAgent.name}</span>
             </div>
           </div>
-        )}
+        </div>
 
-        {phase === "setup" && (
+        {/* Setup overlay */}
+        {showSetup && (
           <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
-            <AgentSetup agent={selectedAgent} onStart={handleAgentStart} onBack={() => setPhase("pick")} />
+            <AgentSetup agent={selectedAgent} onStart={handleAgentStart} onBack={() => setShowSetup(false)} />
           </div>
         )}
 
-        {phase === "chat" && (
+        {/* Chat area */}
+        {!showSetup && (
           <>
             <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-5">
               <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
                 {historyLoading ? (
                   <p className="text-sm text-gray-400">Loading conversation...</p>
-                ) : messages.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-[#26263a] bg-[#101018] p-6 text-center text-sm text-gray-500">
-                    Start a new conversation from the input below.
+                ) : !hasChat ? (
+                  <div className="flex flex-col items-center justify-center gap-4 pt-20 text-center">
+                    <span className="text-5xl">{selectedAgent.icon}</span>
+                    <h2 className="text-xl font-bold text-white">{selectedAgent.name}</h2>
+                    <p className="max-w-md text-sm text-gray-400">{selectedAgent.description}</p>
+                    <p className="text-xs text-gray-600">Select an agent from the sidebar or start typing below</p>
                   </div>
                 ) : (
                   messages.map((message, index) => (
