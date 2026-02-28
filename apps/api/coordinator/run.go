@@ -11,11 +11,15 @@ import (
 
 // Run executes a full swarm run: decompose → spawn → monitor → collect → merge.
 func (c *Coordinator) Run(ctx context.Context, task string, runID string, channelCtx *ChannelContext, onEvent func(RunEvent)) (*SwarmRun, error) {
-	subtasks, err := Decompose(task)
+	subtasks, err := Decompose(task, "")
 	if err != nil {
 		return nil, fmt.Errorf("decompose: %w", err)
 	}
+	return c.RunWithSubTasks(ctx, task, runID, channelCtx, subtasks, onEvent)
+}
 
+// RunWithSubTasks executes a full swarm run with a precomputed decomposition plan.
+func (c *Coordinator) RunWithSubTasks(ctx context.Context, task string, runID string, channelCtx *ChannelContext, subtasks []SubTask, onEvent func(RunEvent)) (*SwarmRun, error) {
 	if runID == "" {
 		runID = uuid.New().String()[:8]
 	}
