@@ -15,12 +15,13 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/dashboard/chat", label: "Chat", feature: "webchat" },
   { href: "/dashboard/agents", label: "Agents" },
+  { href: "/dashboard/deploy", label: "Deploy", feature: "deploy" },
   { href: "/dashboard/usage", label: "Usage" },
 ];
 
 const settingsItems: NavItem[] = [
   { href: "/dashboard/settings", label: "General" },
-  { href: "/dashboard/settings/deploy", label: "Deploy", feature: "deploy" },
+  { href: "/dashboard/settings/deploy", label: "Deploy Integrations", feature: "deploy" },
 ];
 
 function LockIcon() {
