@@ -34,15 +34,19 @@ async function findOrCreateTenant(
   );
 
   if (email) {
-    const stripe = getStripe();
-    const customer = await stripe.customers.create({
-      email,
-      metadata: { tenantId },
-    });
-    await pool.query(
-      "UPDATE users SET stripe_customer_id = $1 WHERE id = $2",
-      [customer.id, userId]
-    );
+    try {
+      const stripe = getStripe();
+      const customer = await stripe.customers.create({
+        email,
+        metadata: { tenantId },
+      });
+      await pool.query(
+        "UPDATE users SET stripe_customer_id = $1 WHERE id = $2",
+        [customer.id, userId]
+      );
+    } catch {
+      // Stripe not configured — skip customer creation
+    }
   }
 
   return tenantId;
