@@ -42,6 +42,8 @@ export async function POST(req: Request) {
       conversationId: z.string().uuid().optional(),
       message: z.string().trim().min(1).max(4000),
       model: z.string().optional(),
+      agentId: z.string().optional(),
+      systemPrompt: z.string().max(2000).optional(),
     })
   );
   if (!parsed.success) {
@@ -58,6 +60,12 @@ export async function POST(req: Request) {
   }
   if (body.model) {
     metadata.model = body.model;
+  }
+  if (body.agentId) {
+    metadata.agent_id = body.agentId;
+  }
+  if (body.systemPrompt) {
+    metadata.system_prompt = body.systemPrompt;
   }
 
   const apiBaseURL = process.env.API_URL ?? "http://localhost:8080";
