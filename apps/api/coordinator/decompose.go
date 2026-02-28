@@ -7,35 +7,47 @@ import (
 	"github.com/google/uuid"
 )
 
+var defaultHands = []string{
+	"Planner Hand",
+	"Research Hand",
+	"Execution Hand",
+	"QA Hand",
+	"Synthesis Hand",
+}
+
 // Decompose splits a complex task into sub-tasks using simple heuristics.
 // Future: this will call an LLM for intelligent decomposition.
-func Decompose(task string) ([]SubTask, error) {
+func Decompose(task string, promptTemplate string) ([]SubTask, error) {
 	task = strings.TrimSpace(task)
 	if task == "" {
 		return nil, fmt.Errorf("empty task")
 	}
 
+	_ = renderDecompositionPrompt(promptTemplate, task)
+
 	parts := splitTask(task)
 	subtasks := make([]SubTask, 0, len(parts))
-	for _, p := range parts {
+	for i, p := range parts {
 		p = strings.TrimSpace(p)
 		if p == "" {
 			continue
 		}
 		id := fmt.Sprintf("sub-%s", uuid.New().String()[:8])
 		subtasks = append(subtasks, SubTask{
-			ID:     id,
-			Brief:  p,
-			Status: "pending",
+			ID:           id,
+			Brief:        p,
+			AssignedHand: defaultHands[i%len(defaultHands)],
+			Status:       "pending",
 		})
 	}
 
 	if len(subtasks) == 0 {
 		id := fmt.Sprintf("sub-%s", uuid.New().String()[:8])
 		subtasks = append(subtasks, SubTask{
-			ID:     id,
-			Brief:  task,
-			Status: "pending",
+			ID:           id,
+			Brief:        task,
+			AssignedHand: defaultHands[0],
+			Status:       "pending",
 		})
 	}
 
@@ -71,4 +83,12 @@ func splitTask(task string) []string {
 
 	// Single task
 	return []string{task}
+}
+
+func renderDecompositionPrompt(promptTemplate, task string) string {
+	template := strings.TrimSpace(promptTemplate)
+	if template == "" {
+		template = "Break the task into clear subtasks. Task: {{task}}"
+	}
+	return strings.ReplaceAll(template, "{{task}}", task)
 }
