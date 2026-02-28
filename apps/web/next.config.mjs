@@ -22,12 +22,14 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  distDir: ".next-build",
   async rewrites() {
     return [
       { source: "/", destination: "/landing.html" },
     ];
   },
-  output: "standalone",
+  // Keep standalone build optional to avoid local Next.js manifest copy failures.
+  output: process.env.NEXT_STANDALONE === "1" ? "standalone" : undefined,
   async headers() {
     return [
       {
