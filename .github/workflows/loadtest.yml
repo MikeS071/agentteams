@@ -1,0 +1,90 @@
+name: Load Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_scenarios:
+        description: "Run full load scenarios (requires reachable WEB/API URLs)"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      web_base_url:
+        description: "Web base URL (for signup/login/chat scenarios)"
+        required: false
+        default: "http://localhost:3000"
+        type: string
+      api_base_url:
+        description: "API base URL (for channels, resume, LLM, websocket)"
+        required: false
+        default: "http://localhost:8080"
+        type: string
+      tenant_ids:
+        description: "Comma-separated tenant IDs for provisioning/LLM/websocket scenarios"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  loadtest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Verify k6 scripts parse
+        run: |
+          for script in tests/load/scenarios/*.js; do
+            echo "Inspecting ${script}"
+            k6 inspect "${script}" >/dev/null
+          done
+
+      - name: Verify docker compose extension
+        run: docker compose -f docker-compose.loadtest.yml config >/dev/null
+
+      - name: Run load scenarios
+        if: ${{ github.event.inputs.run_scenarios == 'true' }}
+        env:
+          WEB_BASE_URL: ${{ github.event.inputs.web_base_url }}
+          API_BASE_URL: ${{ github.event.inputs.api_base_url }}
+          TENANT_IDS: ${{ github.event.inputs.tenant_ids }}
+        run: |
+          mkdir -p tests/load/results
+
+          k6 run tests/load/scenarios/01-signup-tenant-chat.js \
+            --out json=tests/load/results/01-signup-tenant-chat.json \
+            --summary-export tests/load/results/01-signup-tenant-chat.summary.json
+
+          k6 run tests/load/scenarios/02-chat-sessions.js \
+            --out json=tests/load/results/02-chat-sessions.json \
+            --summary-export tests/load/results/02-chat-sessions.summary.json
+
+          k6 run tests/load/scenarios/03-container-provisioning.js \
+            --out json=tests/load/results/03-container-provisioning.json \
+            --summary-export tests/load/results/03-container-provisioning.summary.json
+
+          k6 run tests/load/scenarios/04-llm-proxy.js \
+            --out json=tests/load/results/04-llm-proxy.json \
+            --summary-export tests/load/results/04-llm-proxy.summary.json
+
+      - name: Generate markdown report
+        if: ${{ github.event.inputs.run_scenarios == 'true' }}
+        run: node tests/load/scripts/generate-report.mjs tests/load/results tests/load/results/loadtest-report.md
+
+      - name: Upload load test artifacts
+        if: ${{ github.event.inputs.run_scenarios == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: loadtest-results
+          path: tests/load/results/
