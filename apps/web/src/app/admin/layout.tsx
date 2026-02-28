@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { getAdminSession } from "@/lib/admin-auth";
+import { authOptions } from "@/lib/auth";
 
 const navItems = [
-  { href: "/admin/users", label: "Users" },
+  { href: "/admin", label: "Overview" },
   { href: "/admin/tenants", label: "Tenants" },
+  { href: "/admin/models", label: "Models" },
+  { href: "/admin/users", label: "Users" },
 ];
 
 export const dynamic = "force-dynamic";
@@ -14,10 +17,14 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getAdminSession();
+  const session = await getServerSession(authOptions);
 
   if (!session?.user) {
     redirect("/login");
+  }
+
+  if (!session.user.isAdmin) {
+    redirect("/dashboard");
   }
 
   return (
@@ -41,7 +48,7 @@ export default async function AdminLayout({
 
       <div className="min-w-0 flex-1">
         <header className="flex h-16 items-center justify-between border-b border-[#1d1d2c] bg-[#0d0d14] px-4 sm:px-6">
-          <p className="text-sm font-medium text-gray-300">Admin</p>
+          <p className="text-sm font-medium text-gray-300">Platform Admin</p>
           <p className="text-xs text-gray-400">{session.user.email}</p>
         </header>
         <main className="p-4 sm:p-6">{children}</main>
