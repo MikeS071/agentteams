@@ -58,7 +58,7 @@ export default function HomePage() {
       />
       <section className="mx-auto flex min-h-[72vh] w-full max-w-6xl flex-col px-6 pb-16 pt-24 sm:px-10 lg:px-16">
         <p className="mb-5 inline-flex w-fit items-center rounded-full border border-accent/30 bg-accent/10 px-4 py-1 text-xs uppercase tracking-[0.24em] text-accent2">
-          AgentTeams
+          AgentSquads
         </p>
         <h1 className="max-w-4xl text-4xl font-semibold leading-tight text-text sm:text-5xl md:text-6xl">
           <span className="bg-gradient-to-r from-accent2 via-accent to-accent3 bg-clip-text text-transparent">
@@ -136,7 +136,7 @@ export default function HomePage() {
 
       <footer className="border-t border-bg3/80">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-6 py-8 text-sm text-text2 sm:px-10 md:flex-row md:items-center md:justify-between lg:px-16">
-          <p>© {new Date().getFullYear()} AgentTeams. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} AgentSquads. All rights reserved.</p>
           <nav className="flex items-center gap-5">
             <a href="#capabilities" className="transition hover:text-text">
               Capabilities

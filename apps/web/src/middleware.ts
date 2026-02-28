@@ -5,6 +5,7 @@ import { checkRateLimit, getClientIP, rateLimitExceededResponse } from "@/lib/ra
 
 function isPublicPath(pathname: string): boolean {
   return (
+    pathname === "/" ||
     pathname === "/login" ||
     pathname === "/signup" ||
     pathname.startsWith("/api/auth") ||

@@ -32,7 +32,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md space-y-6 rounded-xl border border-bg3 bg-bg2 p-8">
-        <h1 className="text-center text-2xl font-bold text-text">Sign in to AgentTeams</h1>
+        <h1 className="text-center text-2xl font-bold text-text">Sign in to AgentSquads</h1>
 
         <div className="space-y-3">
           {oauthProviders.map((p) => (

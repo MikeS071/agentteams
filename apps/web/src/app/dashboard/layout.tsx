@@ -59,7 +59,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen bg-[#0a0a0f] text-gray-100">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-[#1d1d2c] bg-[#0d0d14] md:flex">
-        <div className="border-b border-[#1d1d2c] px-5 py-4 text-lg font-semibold text-[#a29bfe]">AgentTeams</div>
+        <div className="border-b border-[#1d1d2c] px-5 py-4 text-lg font-semibold text-[#a29bfe]">AgentSquads</div>
         <nav className="flex flex-col gap-1 p-3">
           <p className="px-3 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Workspace</p>
           {navItems.map((item) => (
