@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgentTeams — Your AI Team. Always On.</title>
+<title>AgentSquads — Your AI Team. Always On.</title>
 <style>
   :root {
     --bg: #0a0a0f;
@@ -53,12 +53,16 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 0.9rem;
   }
-  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-left { display: flex; align-items: center; gap: 2rem; }
+  .nav-links { display: flex; gap: 1.25rem; align-items: center; }
   .nav-links a {
     color: var(--text2); text-decoration: none; font-size: 0.9rem;
     transition: color 0.2s;
   }
   .nav-links a:hover { color: var(--text); }
+  .nav-links .section-link { color: var(--text3); }
+  .nav-right { display: flex; align-items: center; }
+  .login-btn { padding: 0.5rem 1.2rem; }
 
   /* ── Buttons ─────────────────────────────────────── */
   .btn {
@@ -135,6 +139,11 @@
     font-size: 2rem; font-weight: 800; color: var(--accent2);
   }
   .hero-stat .label { font-size: 0.8rem; color: var(--text3); margin-top: 0.25rem; }
+  .hero-note {
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: var(--text3);
+  }
 
   /* ── Section base ────────────────────────────────── */
   section { padding: 6rem 2rem; }
@@ -196,6 +205,12 @@
   .fleet-status .dot {
     width: 6px; height: 6px; border-radius: 50%;
     background: var(--accent3); animation: pulse 2s infinite;
+  }
+  .fleet-note {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text2);
   }
 
   /* ── How it works ────────────────────────────────── */
@@ -322,6 +337,20 @@
     padding: 3rem 2rem; border-top: 1px solid var(--border);
     text-align: center;
   }
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--text); }
   footer p { font-size: 0.85rem; color: var(--text3); }
 
   /* ── Responsive ──────────────────────────────────── */
@@ -329,7 +358,7 @@
     .terminal-wrapper { grid-template-columns: 1fr; }
     .channels-grid { grid-template-columns: 1fr; }
     .hero-stats { gap: 1.5rem; }
-    .nav-links { display: none; }
+    .section-link { display: none; }
   }
 </style>
 </head>
@@ -338,16 +367,21 @@
 <!-- Nav -->
 <nav>
   <div class="nav-inner">
-    <a href="#" class="logo">
-      <div class="logo-icon">⚡</div>
-      AgentTeams
-    </a>
-    <div class="nav-links">
-      <a href="#agents">Agents</a>
-      <a href="#how">How It Works</a>
-      <a href="#channels">Channels</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#" class="btn btn-primary" style="padding: 0.5rem 1.2rem;">Get Started Free</a>
+    <div class="nav-left">
+      <a href="/" class="logo">
+        <div class="logo-icon">⚡</div>
+        AgentSquads
+      </a>
+      <div class="nav-links">
+        <a class="section-link" href="#agents">Agents</a>
+        <a class="section-link" href="#how">How It Works</a>
+        <a class="section-link" href="#channels">Channels</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/docs">Docs</a>
+      </div>
+    </div>
+    <div class="nav-right">
+      <a href="/login" class="btn btn-primary login-btn">Login</a>
     </div>
   </div>
 </nav>
@@ -357,18 +391,18 @@
   <div class="hero-content">
     <div class="hero-badge">
       <span class="dot"></span>
-      Open signup — no waitlist
+      Build and run your AI squad
     </div>
     <h1>Your AI Agent Team.<br>Always On.</h1>
-    <p>Autonomous agents that research, build, deploy, and manage — on your behalf. Chat from anywhere. Watch them work. Pay only for what you use.</p>
+    <p>Autonomous agents that research, build, deploy, and manage on your behalf. Start in webchat now, then continue in Telegram and WhatsApp as OF-25 ships.</p>
     <div class="hero-buttons">
-      <a href="#" class="btn btn-primary">Start Free →</a>
+      <a href="/signup" class="btn btn-primary">Get Started Free →</a>
       <a href="#agents" class="btn btn-secondary">See the Agents</a>
     </div>
     <div class="hero-stats">
       <div class="hero-stat">
         <div class="num">8</div>
-        <div class="label">Pre-built Agents</div>
+        <div class="label">Pre-built Hands</div>
       </div>
       <div class="hero-stat">
         <div class="num">3</div>
@@ -379,6 +413,7 @@
         <div class="label">To Get Started</div>
       </div>
     </div>
+    <p class="hero-note">Webchat is live. Telegram and WhatsApp integrations are planned in OF-25.</p>
   </div>
 </section>
 
@@ -447,6 +482,7 @@
         <div class="fleet-status"><span class="dot"></span> ready to deploy</div>
       </div>
     </div>
+    <p class="fleet-note">General Chat is also included for freeform requests alongside these 8 specialist hands.</p>
   </div>
 </section>
 
@@ -459,7 +495,7 @@
       <div class="step">
         <div class="step-num">1</div>
         <h3>Sign Up</h3>
-        <p>Email, Google, GitHub, or Facebook. Your agent environment spins up in under 30 seconds. Free credits loaded instantly.</p>
+        <p>Create an account with email/password or Google OAuth, then launch your workspace and start with free credits.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
@@ -525,7 +561,7 @@
   <div class="container" style="text-align: center;">
     <div class="section-label">connected_everywhere</div>
     <h2 class="section-title">One conversation. Every channel.</h2>
-    <p class="section-desc" style="margin: 0 auto 3rem;">Message from Telegram. Continue on WhatsApp. Check the web dashboard. Same agents, same context, always in sync.</p>
+    <p class="section-desc" style="margin: 0 auto 3rem;">Use webchat today. Telegram and WhatsApp stay on the roadmap for OF-25 so context stays synced across all 3 channels.</p>
 
     <div class="channels-grid">
       <div class="channel-card">
@@ -536,12 +572,12 @@
       <div class="channel-card">
         <div class="channel-icon">✈️</div>
         <h3>Telegram</h3>
-        <p>Message your agents from Telegram. Full capability — launch Hands, check progress, get results.</p>
+        <p>Planned in OF-25: message your agents from Telegram with the same context and history.</p>
       </div>
       <div class="channel-card">
         <div class="channel-icon">📱</div>
         <h3>WhatsApp</h3>
-        <p>Your agents on WhatsApp. Same conversation, same context. Works on any phone.</p>
+        <p>Planned in OF-25: continue on WhatsApp with shared context across your squad.</p>
       </div>
     </div>
   </div>
@@ -559,15 +595,14 @@
       <div class="price">$0 <span>to start</span></div>
       <div class="subtitle">1M tokens or $10 free — whichever is greater</div>
       <ul class="pricing-features">
-        <li><span class="check">✓</span> All 8 agents included</li>
+        <li><span class="check">✓</span> All 8 specialist hands + General Chat</li>
         <li><span class="check">✓</span> Agent swarm access</li>
         <li><span class="check">✓</span> Web terminal</li>
         <li><span class="check">✓</span> Telegram + WhatsApp + Webchat</li>
-        <li><span class="check">✓</span> All AI models (GPT-4o, Claude, Gemini, etc.)</li>
         <li><span class="check">✓</span> Vercel + Supabase deploy</li>
         <li><span class="check">✓</span> Pay per token after free credits</li>
       </ul>
-      <a href="#" class="btn btn-primary" style="width: 100%; justify-content: center;">Get Started Free →</a>
+      <a href="/signup" class="btn btn-primary" style="width: 100%; justify-content: center;">Get Started Free →</a>
     </div>
   </div>
 </section>
@@ -576,12 +611,19 @@
 <section class="cta-section">
   <h2>Stop prompting.<br>Start delegating.</h2>
   <p>Your AI team is ready. Sign up in 30 seconds. Free credits. No credit card.</p>
-  <a href="#" class="btn btn-primary">Get Started Free →</a>
+  <a href="/signup" class="btn btn-primary">Get Started Free →</a>
 </section>
 
 <!-- Footer -->
 <footer>
-  <p>© 2026 AgentTeams. Built with 🔥 and autonomous agents.</p>
+  <div class="footer-links">
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/contact">Contact</a>
+  </div>
+  <p>© 2026 AgentSquads. Built with 🔥 and autonomous agents.</p>
 </footer>
 
 </body>
