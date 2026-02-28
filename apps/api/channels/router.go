@@ -285,6 +285,11 @@ func (r *Router) generateAssistantResponse(ctx context.Context, tenantID, conver
 		return "", errors.New("no conversation context available")
 	}
 
+	// Prepend system prompt from metadata (agent mode)
+	if sp, ok := metadata["system_prompt"]; ok && strings.TrimSpace(sp) != "" {
+		messages = append([]llmMessage{{Role: "system", Content: sp}}, messages...)
+	}
+
 	payloadBody, err := json.Marshal(map[string]any{
 		"model":    resolveRequestModel(metadata, r.model),
 		"messages": messages,
