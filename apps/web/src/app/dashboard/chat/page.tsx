@@ -165,10 +165,10 @@ export default function ChatPage() {
 
         {/* Bottom: Agent grid */}
         <div className="border-t border-[#1f1f2f]">
-          <div className="p-3 pb-1">
+          <div className="px-2 py-1.5">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Agents</h2>
           </div>
-          <div className="grid grid-cols-2 gap-2 overflow-y-auto p-2 pt-1" style={{ maxHeight: "380px" }}>
+          <div className="grid grid-cols-3 gap-1.5 p-2 pt-1">
             {AGENTS.map((agent) => (
               <button
                 key={agent.id}
@@ -185,19 +185,19 @@ export default function ChatPage() {
                     <img
                       src={agent.image}
                       alt={agent.name}
-                      className="h-20 w-full object-cover opacity-70 transition-opacity group-hover:opacity-100"
+                      className="h-14 w-full object-cover opacity-70 transition-opacity group-hover:opacity-100"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d15] via-transparent to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-2">
-                      <p className="text-xs font-semibold text-white">{agent.name}</p>
+                      <p className="text-[10px] font-semibold leading-tight text-white">{agent.name}</p>
                     </div>
                     {/* Accent bar on hover */}
                     <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#6c5ce7] to-[#a855f7] opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
                 ) : (
-                  <div className="flex h-20 flex-col items-center justify-center gap-1 bg-[#12121a]">
-                    <span className="text-xl">{agent.icon}</span>
-                    <p className="text-xs font-semibold text-gray-300">{agent.name}</p>
+                  <div className="flex h-14 flex-col items-center justify-center gap-0.5 bg-[#12121a]">
+                    <span className="text-base">{agent.icon}</span>
+                    <p className="text-[10px] font-semibold leading-tight text-gray-300">{agent.name}</p>
                   </div>
                 )}
               </button>
