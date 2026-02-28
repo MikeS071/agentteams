@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
 ];
 
 const settingsItems: NavItem[] = [
+  { href: "/dashboard/profile", label: "Profile" },
   { href: "/dashboard/settings", label: "General" },
   { href: "/dashboard/settings/deploy", label: "Deploy", feature: "deploy" },
 ];
