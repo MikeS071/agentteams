@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
+import { checkFeatureAccess } from "@/lib/feature-policies";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,10 @@ export async function GET(request: NextRequest) {
 
   if (!tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const featureAccess = await checkFeatureAccess(tenantId, "deploy");
+  if (featureAccess) {
+    return featureAccess;
   }
 
   const clientId = process.env.VERCEL_CLIENT_ID;
