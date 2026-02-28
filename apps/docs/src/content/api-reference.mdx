@@ -1,0 +1,283 @@
+# API Reference
+
+This page is auto-generated from route files in `apps/web/src/app/api`.
+
+_Last generated: 2026-02-28T03:17:52.614Z_
+
+## Endpoint Index
+
+| Endpoint | Methods | Source |
+| --- | --- | --- |
+| `/api/admin/billing` | `GET` | `apps/web/src/app/api/admin/billing/route.ts` |
+| `/api/admin/infra` | `GET, POST` | `apps/web/src/app/api/admin/infra/route.ts` |
+| `/api/admin/models` | `GET, POST` | `apps/web/src/app/api/admin/models/route.ts` |
+| `/api/admin/models/[id]` | `PATCH, DELETE` | `apps/web/src/app/api/admin/models/[id]/route.ts` |
+| `/api/admin/policies` | `GET, PATCH` | `apps/web/src/app/api/admin/policies/route.ts` |
+| `/api/admin/users/[id]` | `GET, PATCH, DELETE` | `apps/web/src/app/api/admin/users/[id]/route.ts` |
+| `/api/agents/runs` | `GET` | `apps/web/src/app/api/agents/runs/route.ts` |
+| `/api/auth/[...nextauth]` | `Unknown` | `apps/web/src/app/api/auth/[...nextauth]/route.ts` |
+| `/api/auth/signup` | `POST` | `apps/web/src/app/api/auth/signup/route.ts` |
+| `/api/billing/balance` | `GET` | `apps/web/src/app/api/billing/balance/route.ts` |
+| `/api/billing/checkout` | `POST` | `apps/web/src/app/api/billing/checkout/route.ts` |
+| `/api/chat` | `POST` | `apps/web/src/app/api/chat/route.ts` |
+| `/api/chat/conversations` | `GET` | `apps/web/src/app/api/chat/conversations/route.ts` |
+| `/api/chat/history` | `GET` | `apps/web/src/app/api/chat/history/route.ts` |
+| `/api/deploy/connections` | `GET, DELETE` | `apps/web/src/app/api/deploy/connections/route.ts` |
+| `/api/deploy/supabase/authorize` | `GET` | `apps/web/src/app/api/deploy/supabase/authorize/route.ts` |
+| `/api/deploy/supabase/callback` | `GET` | `apps/web/src/app/api/deploy/supabase/callback/route.ts` |
+| `/api/deploy/vercel/authorize` | `GET` | `apps/web/src/app/api/deploy/vercel/authorize/route.ts` |
+| `/api/deploy/vercel/callback` | `GET` | `apps/web/src/app/api/deploy/vercel/callback/route.ts` |
+| `/api/tenant/status` | `GET` | `apps/web/src/app/api/tenant/status/route.ts` |
+| `/api/usage/by-model` | `GET` | `apps/web/src/app/api/usage/by-model/route.ts` |
+| `/api/usage/daily` | `GET` | `apps/web/src/app/api/usage/daily/route.ts` |
+| `/api/usage/recent` | `GET` | `apps/web/src/app/api/usage/recent/route.ts` |
+| `/api/webhooks/stripe` | `POST` | `apps/web/src/app/api/webhooks/stripe/route.ts` |
+
+## `/api/admin/billing`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/admin/billing/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/admin/billing"
+```
+
+
+## `/api/admin/infra`
+
+- Methods: `GET, POST`
+- Source: `apps/web/src/app/api/admin/infra/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/admin/infra"
+```
+
+
+## `/api/admin/models`
+
+- Methods: `GET, POST`
+- Source: `apps/web/src/app/api/admin/models/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/admin/models"
+```
+
+
+## `/api/admin/models/[id]`
+
+- Methods: `PATCH, DELETE`
+- Source: `apps/web/src/app/api/admin/models/[id]/route.ts`
+
+```bash
+curl -X PATCH "https://your-domain.com/api/admin/models/[id]" \
+  -H 'Content-Type: application/json' \
+  -d '{"example":"value"}'
+```
+
+
+## `/api/admin/policies`
+
+- Methods: `GET, PATCH`
+- Source: `apps/web/src/app/api/admin/policies/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/admin/policies"
+```
+
+
+## `/api/admin/users/[id]`
+
+- Methods: `GET, PATCH, DELETE`
+- Source: `apps/web/src/app/api/admin/users/[id]/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/admin/users/[id]"
+```
+
+
+## `/api/agents/runs`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/agents/runs/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/agents/runs"
+```
+
+
+## `/api/auth/[...nextauth]`
+
+- Methods: `Unknown`
+- Source: `apps/web/src/app/api/auth/[...nextauth]/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/auth/[...nextauth]"
+```
+
+
+## `/api/auth/signup`
+
+- Methods: `POST`
+- Source: `apps/web/src/app/api/auth/signup/route.ts`
+
+```bash
+curl -X POST "https://your-domain.com/api/auth/signup" \
+  -H 'Content-Type: application/json' \
+  -d '{"example":"value"}'
+```
+
+
+## `/api/billing/balance`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/billing/balance/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/billing/balance"
+```
+
+
+## `/api/billing/checkout`
+
+- Methods: `POST`
+- Source: `apps/web/src/app/api/billing/checkout/route.ts`
+
+```bash
+curl -X POST "https://your-domain.com/api/billing/checkout" \
+  -H 'Content-Type: application/json' \
+  -d '{"example":"value"}'
+```
+
+
+## `/api/chat`
+
+- Methods: `POST`
+- Source: `apps/web/src/app/api/chat/route.ts`
+
+```bash
+curl -X POST "https://your-domain.com/api/chat" \
+  -H 'Content-Type: application/json' \
+  -d '{"example":"value"}'
+```
+
+
+## `/api/chat/conversations`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/chat/conversations/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/chat/conversations"
+```
+
+
+## `/api/chat/history`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/chat/history/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/chat/history"
+```
+
+
+## `/api/deploy/connections`
+
+- Methods: `GET, DELETE`
+- Source: `apps/web/src/app/api/deploy/connections/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/deploy/connections"
+```
+
+
+## `/api/deploy/supabase/authorize`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/deploy/supabase/authorize/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/deploy/supabase/authorize"
+```
+
+
+## `/api/deploy/supabase/callback`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/deploy/supabase/callback/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/deploy/supabase/callback"
+```
+
+
+## `/api/deploy/vercel/authorize`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/deploy/vercel/authorize/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/deploy/vercel/authorize"
+```
+
+
+## `/api/deploy/vercel/callback`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/deploy/vercel/callback/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/deploy/vercel/callback"
+```
+
+
+## `/api/tenant/status`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/tenant/status/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/tenant/status"
+```
+
+
+## `/api/usage/by-model`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/usage/by-model/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/usage/by-model"
+```
+
+
+## `/api/usage/daily`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/usage/daily/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/usage/daily"
+```
+
+
+## `/api/usage/recent`
+
+- Methods: `GET`
+- Source: `apps/web/src/app/api/usage/recent/route.ts`
+
+```bash
+curl -X GET "https://your-domain.com/api/usage/recent"
+```
+
+
+## `/api/webhooks/stripe`
+
+- Methods: `POST`
+- Source: `apps/web/src/app/api/webhooks/stripe/route.ts`
+
+```bash
+curl -X POST "https://your-domain.com/api/webhooks/stripe" \
+  -H 'Content-Type: application/json' \
+  -d '{"example":"value"}'
+```

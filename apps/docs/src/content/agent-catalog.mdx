@@ -1,0 +1,32 @@
+# Agent Catalog
+
+The catalog contains reusable agents and specialist hands.
+
+## Common Agents
+
+| Agent | Purpose | Example Use |
+| --- | --- | --- |
+| Support Triage | Categorize incoming requests | Route issues to billing or technical queues |
+| Sales Qualifier | Score and enrich leads | Qualify inbound demo requests |
+| Knowledge Retriever | Query docs and FAQs | Answer product setup questions |
+| Ops Assistant | Execute operational checklists | Validate deploy status and alerts |
+
+## Hands and Specializations
+
+Hands are focused capability modules attached to an agent.
+
+- `research-hand`: gathers context from external and internal sources
+- `analysis-hand`: structures findings and identifies tradeoffs
+- `execution-hand`: performs deterministic tool steps
+- `review-hand`: validates output quality and policy compliance
+
+## Example Assignment
+
+```yaml
+agent: support-triage
+hands:
+  - research-hand
+  - execution-hand
+  - review-hand
+mode: assisted
+```

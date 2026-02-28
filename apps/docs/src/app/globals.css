@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0a0a0f;
+  --bg2: #12121a;
+  --bg3: #1a1a2e;
+  --accent: #6c5ce7;
+  --accent2: #a29bfe;
+  --accent3: #00cec9;
+  --text: #e8e8f0;
+  --text2: #a0a0b8;
+}
+
+html,
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(108, 92, 231, 0.13), transparent 32%),
+    radial-gradient(circle at 82% 2%, rgba(0, 206, 201, 0.1), transparent 28%);
+}
+
+.nextra-nav-container-blur {
+  background: color-mix(in oklab, var(--bg) 84%, transparent) !important;
+}
+
+.nextra-sidebar-container,
+.nextra-toc {
+  background: transparent !important;
+}
+
+.nx-text-primary-600,
+.nx-text-primary-700,
+.nx-text-primary-800 {
+  color: var(--accent3) !important;
+}
