@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import DashboardUserMenu from "@/components/DashboardUserMenu";
+import ApprovalsBadge from "@/components/ApprovalsBadge";
 import { getTenantFeatureMap } from "@/lib/feature-policies";
 import { type Feature } from "@/lib/features";
 
@@ -17,6 +18,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/channels", label: "Channels" },
   { href: "/dashboard/hands", label: "Hands" },
   { href: "/dashboard/agents", label: "Agents" },
+  { href: "/dashboard/approvals", label: "Approvals" },
   { href: "/dashboard/usage", label: "Usage" },
   { href: "/dashboard/billing", label: "Billing" },
 ];
@@ -71,9 +73,10 @@ export default async function DashboardLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:bg-[#131320] hover:text-gray-200"
+                className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-gray-400 hover:bg-[#131320] hover:text-gray-200"
               >
-                {item.label}
+                <span>{item.label}</span>
+                {item.href === "/dashboard/approvals" ? <ApprovalsBadge /> : null}
               </Link>
             ) : (
               <span
@@ -117,9 +120,9 @@ export default async function DashboardLayout({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="text-gray-400"
+                    className="inline-flex items-center gap-1 text-gray-400"
                   >
-                    {item.label}
+                    <span>{item.label}</span>
                   </Link>
                 ) : (
                   <span key={item.href} className="inline-flex items-center gap-1 text-gray-500">
