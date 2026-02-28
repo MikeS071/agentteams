@@ -26,10 +26,33 @@ type InboundMessage struct {
 
 // OutboundMessage is the assistant response returned by the channel router.
 type OutboundMessage struct {
-	TenantID       string `json:"tenant_id"`
-	Content        string `json:"content"`
-	Channel        string `json:"channel"`
-	ConversationID string `json:"conversation_id"`
+	TenantID       string            `json:"tenant_id"`
+	Content        string            `json:"content"`
+	Channel        string            `json:"channel"`
+	ConversationID string            `json:"conversation_id"`
+	Stream         bool              `json:"stream,omitempty"`
+	Metadata       map[string]string `json:"metadata,omitempty"`
+}
+
+// AgentTaskRequest carries inbound channel context for swarm-trigger checks.
+type AgentTaskRequest struct {
+	TenantID       string
+	ConversationID string
+	Content        string
+	Channel        string
+	Metadata       map[string]string
+}
+
+// AgentTaskResult reports whether the message was accepted by the agent swarm.
+type AgentTaskResult struct {
+	Accepted bool
+	Ack      string
+	RunID    string
+}
+
+// AgentBridge decides whether a message should start an agent swarm task.
+type AgentBridge interface {
+	HandleChannelMessage(ctx context.Context, req AgentTaskRequest) (AgentTaskResult, error)
 }
 
 // Router is the central inbound -> assistant -> outbound channel pipeline.
@@ -39,6 +62,7 @@ type Router struct {
 	httpClient  *http.Client
 	llmProxyURL string
 	model       string
+	agentBridge AgentBridge
 }
 
 func NewRouter(db *sql.DB, redisClient *redis.Client) *Router {
@@ -49,6 +73,10 @@ func NewRouter(db *sql.DB, redisClient *redis.Client) *Router {
 		llmProxyURL: resolveLLMProxyURL(),
 		model:       resolveModel(),
 	}
+}
+
+func (r *Router) SetAgentBridge(bridge AgentBridge) {
+	r.agentBridge = bridge
 }
 
 // Route normalizes, persists, executes, persists response, publishes, and returns outbound payload.
@@ -63,9 +91,37 @@ func (r *Router) Route(ctx context.Context, msg InboundMessage) (OutboundMessage
 		return OutboundMessage{}, err
 	}
 
-	assistantContent, err := r.generateAssistantResponse(ctx, normalized.TenantID, conversationID)
-	if err != nil {
-		return OutboundMessage{}, err
+	assistantContent := ""
+	outMetadata := map[string]string{}
+
+	if r.agentBridge != nil {
+		agentResult, err := r.agentBridge.HandleChannelMessage(ctx, AgentTaskRequest{
+			TenantID:       normalized.TenantID,
+			ConversationID: conversationID,
+			Content:        normalized.Content,
+			Channel:        normalized.Channel,
+			Metadata:       normalized.Metadata,
+		})
+		if err != nil {
+			return OutboundMessage{}, err
+		}
+		if agentResult.Accepted {
+			assistantContent = strings.TrimSpace(agentResult.Ack)
+			if assistantContent == "" {
+				assistantContent = "Agent swarm started. I will post progress updates here."
+			}
+			if agentResult.RunID != "" {
+				outMetadata["run_id"] = agentResult.RunID
+				outMetadata["event"] = "accepted"
+			}
+		}
+	}
+
+	if assistantContent == "" {
+		assistantContent, err = r.generateAssistantResponse(ctx, normalized.TenantID, conversationID)
+		if err != nil {
+			return OutboundMessage{}, err
+		}
 	}
 
 	if err := r.saveAssistant(ctx, conversationID, normalized.Channel, assistantContent); err != nil {
@@ -77,6 +133,7 @@ func (r *Router) Route(ctx context.Context, msg InboundMessage) (OutboundMessage
 		Content:        assistantContent,
 		Channel:        normalized.Channel,
 		ConversationID: conversationID,
+		Metadata:       outMetadata,
 	}
 
 	if err := r.publishResponse(ctx, out); err != nil {

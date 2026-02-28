@@ -70,8 +70,23 @@ func (f *Fanout) fanout(ctx context.Context, out OutboundMessage) error {
 		return err
 	}
 
+	targetChannel := strings.TrimSpace(out.Channel)
+	targetChannelUserID := ""
+	if out.Metadata != nil {
+		targetChannelUserID = strings.TrimSpace(out.Metadata["channel_user_id"])
+		if targetChannelUserID == "" {
+			targetChannelUserID = strings.TrimSpace(out.Metadata["user_id"])
+		}
+	}
+
 	for _, channel := range channels {
 		if channel.Muted {
+			continue
+		}
+		if targetChannel != "" && channel.Channel != targetChannel {
+			continue
+		}
+		if targetChannelUserID != "" && channel.ChannelUserID != "" && channel.ChannelUserID != targetChannelUserID {
 			continue
 		}
 

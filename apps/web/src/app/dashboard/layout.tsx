@@ -6,6 +6,7 @@ import DashboardUserMenu from "@/components/DashboardUserMenu";
 
 const navItems = [
   { href: "/dashboard/chat", label: "Chat" },
+  { href: "/dashboard/agents", label: "Agents" },
   { href: "/dashboard/usage", label: "Usage" },
 ];
 
