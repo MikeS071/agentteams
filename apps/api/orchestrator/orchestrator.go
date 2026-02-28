@@ -2,33 +2,38 @@ package orchestrator
 
 import (
 	"context"
-	"time"
 )
 
 // TenantOrchestrator manages tenant container lifecycle.
 type TenantOrchestrator interface {
-	Create(ctx context.Context, tenantID string) (*Container, error)
-	Start(ctx context.Context, tenantID string) error
-	Stop(ctx context.Context, tenantID string) error
-	Delete(ctx context.Context, tenantID string) error
-	Status(ctx context.Context, tenantID string) (*ContainerStatus, error)
-	Exec(ctx context.Context, tenantID string, cmd []string) (string, error)
+	CreateTenant(ctx context.Context, tenant TenantConfig) (ContainerInfo, error)
+	StartTenant(ctx context.Context, tenantID string) error
+	StopTenant(ctx context.Context, tenantID string) error
+	DestroyTenant(ctx context.Context, tenantID string) error
+	GetStatus(ctx context.Context, tenantID string) (TenantStatus, error)
+	ListTenants(ctx context.Context) ([]TenantStatus, error)
 }
 
-// Container represents a tenant's running container.
-type Container struct {
-	ID       string `json:"id"`
-	TenantID string `json:"tenant_id"`
-	Status   string `json:"status"`
-	IP       string `json:"ip"`
-	Port     int    `json:"port"`
+// TenantConfig stores tenant-scoped runtime config.
+type TenantConfig struct {
+	TenantID       string
+	PlatformAPIURL string
+	PlatformAPIKey string
+	LLMProxyURL    string
 }
 
-// ContainerStatus holds runtime info about a tenant container.
-type ContainerStatus struct {
-	Running   bool      `json:"running"`
-	StartedAt time.Time `json:"started_at"`
-	Health    string    `json:"health"` // healthy, unhealthy, starting
-	MemoryMB  int64     `json:"memory_mb"`
-	CPUPct    float64   `json:"cpu_pct"`
+// ContainerInfo represents a tenant container identity and runtime status.
+type ContainerInfo struct {
+	ContainerID string `json:"container_id"`
+	Port        int    `json:"port"`
+	Status      string `json:"status"`
+}
+
+// TenantStatus combines Docker state and OpenFang health for a tenant.
+type TenantStatus struct {
+	TenantID    string `json:"tenant_id"`
+	ContainerID string `json:"container_id"`
+	Port        int    `json:"port"`
+	Status      string `json:"status"` // running, stopped, creating, error
+	OpenFangOK  bool   `json:"openfang_ok"`
 }

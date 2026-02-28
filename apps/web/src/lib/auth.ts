@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import pool from "./db";
+import { buildServiceHeaders } from "./security";
 
 const ALLOWED_EMAILS = new Set([
   "michal.szalinski@gmail.com",
@@ -11,12 +12,20 @@ async function findOrCreateTenant(
   userId: string,
   email?: string | null
 ): Promise<string> {
-  const existing = await pool.query(
-    "SELECT id FROM tenants WHERE user_id = $1",
+  const existing = await pool.query<{
+    id: string;
+    container_id: string | null;
+    container_port: number | null;
+  }>(
+    "SELECT id, container_id, container_port FROM tenants WHERE user_id = $1",
     [userId]
   );
   if (existing.rows.length > 0) {
-    return existing.rows[0].id;
+    const tenant = existing.rows[0];
+    if (!tenant.container_id || !tenant.container_port) {
+      await ensureTenantProvisioned(tenant.id);
+    }
+    return tenant.id;
   }
 
   const tenant = await pool.query(
@@ -47,7 +56,24 @@ async function findOrCreateTenant(
     }
   }
 
+  await ensureTenantProvisioned(tenantId);
   return tenantId;
+}
+
+async function ensureTenantProvisioned(tenantId: string): Promise<void> {
+  const apiBaseURL = process.env.API_URL ?? "http://localhost:8080";
+  const response = await fetch(`${apiBaseURL}/api/tenants/${tenantId}/start`, {
+    method: "POST",
+    headers: buildServiceHeaders(),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `auto-provision failed for tenant ${tenantId}: ${response.status} ${body}`
+    );
+  }
 }
 
 async function linkAccount(account: {

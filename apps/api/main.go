@@ -17,6 +17,7 @@ import (
 	"github.com/agentteams/api/coordinator"
 	"github.com/agentteams/api/llmproxy"
 	"github.com/agentteams/api/orchestrator"
+	"github.com/agentteams/api/routes"
 	"github.com/agentteams/api/terminal"
 	"github.com/agentteams/api/workflows"
 
@@ -99,6 +100,14 @@ func main() {
 	} else {
 		slog.Warn("DATABASE_URL not set, LLM proxy and terminal disabled")
 	}
+
+	routes.MountTenantRoutes(
+		mux,
+		db,
+		orch,
+		strings.TrimSpace(os.Getenv("SERVICE_API_KEY")),
+		strings.TrimSpace(os.Getenv("API_JWT_SECRET")),
+	)
 
 	mux.HandleFunc("POST /api/channels/inbound", func(w http.ResponseWriter, r *http.Request) {
 		if channelRouter == nil {

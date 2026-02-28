@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -15,15 +19,21 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/go-connections/nat"
 )
 
 const (
-	tenantImage   = "agentteams-tenant:latest"
-	tenantNetwork = "agentteams-tenant-net"
-	memoryLimit   = 512 * 1024 * 1024 // 512MB
-	cpuQuota      = 50000             // 0.5 cores (50% of 100000)
-	cpuPeriod     = 100000
-	tenantPort    = 4200
+	tenantImage          = "agentteams-tenant:latest"
+	tenantNetwork        = "agentteams-tenant-net"
+	memoryLimit          = 512 * 1024 * 1024 // 512MB
+	cpuQuota             = 100000            // 1 CPU core
+	cpuPeriod            = 100000
+	tenantPort           = 4200
+	openFangHealthHost   = "127.0.0.1"
+	openFangStartTimeout = 60 * time.Second
+
+	labelTenantID = "agentsquads-tenant"
+	labelPort     = "agentsquads-port"
 )
 
 // DockerOrchestrator implements TenantOrchestrator using the Docker Engine API.
@@ -78,7 +88,7 @@ func (o *DockerOrchestrator) EnsureNetwork(ctx context.Context) error {
 	resp, err := o.cli.NetworkCreate(ctx, tenantNetwork, network.CreateOptions{
 		Driver:   "bridge",
 		Internal: true,
-		Labels:   map[string]string{"agentteams.managed": "true"},
+		Labels:   map[string]string{"agentsquads-managed": "true"},
 	})
 	if err != nil {
 		return fmt.Errorf("network create: %w", err)
@@ -95,19 +105,69 @@ func containerName(tenantID string) string {
 	return "at-tenant-" + short
 }
 
-// Create creates a new tenant container.
-func (o *DockerOrchestrator) Create(ctx context.Context, tenantID string) (*Container, error) {
+// CreateTenant creates a tenant container without starting it.
+func (o *DockerOrchestrator) CreateTenant(ctx context.Context, tenant TenantConfig) (ContainerInfo, error) {
+	tenantID := strings.TrimSpace(tenant.TenantID)
+	if tenantID == "" {
+		return ContainerInfo{}, fmt.Errorf("tenant id is required")
+	}
+
+	runtime, err := o.getTenantRuntime(ctx, tenantID)
+	if err != nil {
+		return ContainerInfo{}, err
+	}
+	if runtime.ContainerID.Valid && runtime.ContainerID.String != "" {
+		status, statusErr := o.GetStatus(ctx, tenantID)
+		if statusErr != nil {
+			return ContainerInfo{}, statusErr
+		}
+		return ContainerInfo{
+			ContainerID: status.ContainerID,
+			Port:        status.Port,
+			Status:      status.Status,
+		}, nil
+	}
+
 	o.log.Info("creating container", "tenant", tenantID)
 
-	// Pull image (best-effort, may already be local)
+	// Pull image best-effort in case newer image exists.
 	reader, err := o.cli.ImagePull(ctx, tenantImage, image.PullOptions{})
 	if err != nil {
 		o.log.Warn("image pull failed (using local)", "err", err)
 	} else {
 		_, _ = io.Copy(io.Discard, reader)
-		reader.Close()
+		_ = reader.Close()
 	}
 
+	if tenant.PlatformAPIURL == "" {
+		tenant.PlatformAPIURL = o.platformAPIURL
+	}
+	if tenant.PlatformAPIKey == "" {
+		tenant.PlatformAPIKey = o.platformAPIKey
+	}
+	if tenant.LLMProxyURL == "" {
+		tenant.LLMProxyURL = o.llmProxyURL
+	}
+
+	port, err := o.allocatePort(ctx)
+	if err != nil {
+		return ContainerInfo{}, err
+	}
+
+	cfg, err := GenerateConfig(ctx, tenant)
+	if err != nil {
+		return ContainerInfo{}, fmt.Errorf("generate config: %w", err)
+	}
+	cleanupConfigOnError := true
+	defer func() {
+		if cleanupConfigOnError {
+			if err := CleanupConfig(tenantID); err != nil {
+				o.log.Warn("cleanup config failed", "tenant", tenantID, "err", err)
+			}
+		}
+	}()
+
+	exposedPort := nat.Port(fmt.Sprintf("%d/tcp", tenantPort))
 	name := containerName(tenantID)
 
 	resp, err := o.cli.ContainerCreate(ctx,
@@ -115,159 +175,238 @@ func (o *DockerOrchestrator) Create(ctx context.Context, tenantID string) (*Cont
 			Image: tenantImage,
 			Env: []string{
 				"TENANT_ID=" + tenantID,
-				"PLATFORM_API_URL=" + o.platformAPIURL,
-				"PLATFORM_API_KEY=" + o.platformAPIKey,
-				"LLM_PROXY_URL=" + o.llmProxyURL,
+				"PLATFORM_API_URL=" + tenant.PlatformAPIURL,
+				"PLATFORM_API_KEY=" + tenant.PlatformAPIKey,
+				"LLM_PROXY_URL=" + tenant.LLMProxyURL,
+			},
+			ExposedPorts: nat.PortSet{
+				exposedPort: struct{}{},
 			},
 			Labels: map[string]string{
-				"agentteams.tenant": tenantID,
+				labelTenantID: tenantID,
+				labelPort:     strconv.Itoa(port),
 			},
 		},
 		&container.HostConfig{
 			Resources: container.Resources{
-				Memory:   memoryLimit,
-				CPUQuota: cpuQuota,
+				Memory:    memoryLimit,
+				CPUQuota:  cpuQuota,
 				CPUPeriod: cpuPeriod,
 			},
 			RestartPolicy: container.RestartPolicy{Name: "unless-stopped"},
 			NetworkMode:   container.NetworkMode(tenantNetwork),
+			PortBindings: nat.PortMap{
+				exposedPort: []nat.PortBinding{{
+					HostIP:   openFangHealthHost,
+					HostPort: strconv.Itoa(port),
+				}},
+			},
+			Binds: []string{
+				fmt.Sprintf("%s:%s:ro", cfg.HostPath, cfg.ContainerPath),
+			},
 		},
 		nil, nil, name,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("container create: %w", err)
+		return ContainerInfo{}, fmt.Errorf("container create: %w", err)
 	}
 
-	// Update DB
-	_, err = o.db.ExecContext(ctx,
-		"UPDATE tenants SET container_id = $1 WHERE id = $2",
-		resp.ID, tenantID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("db update: %w", err)
+	if err := o.updateTenantRuntime(ctx, tenantID, sql.NullString{String: resp.ID, Valid: true}, sql.NullInt64{Int64: int64(port), Valid: true}); err != nil {
+		_ = o.cli.ContainerRemove(ctx, resp.ID, container.RemoveOptions{Force: true})
+		return ContainerInfo{}, err
 	}
 
-	// Start the container
-	if err := o.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		return nil, fmt.Errorf("container start: %w", err)
-	}
+	cleanupConfigOnError = false
 
-	// Inspect for IP
-	info, err := o.cli.ContainerInspect(ctx, resp.ID)
-	if err != nil {
-		return nil, fmt.Errorf("inspect: %w", err)
-	}
-
-	ip := ""
-	if net, ok := info.NetworkSettings.Networks[tenantNetwork]; ok {
-		ip = net.IPAddress
-	}
-
-	o.log.Info("container created", "tenant", tenantID, "container", resp.ID[:12])
-	return &Container{
-		ID:       resp.ID,
-		TenantID: tenantID,
-		Status:   "running",
-		IP:       ip,
-		Port:     tenantPort,
-	}, nil
+	o.log.Info("container created", "tenant", tenantID, "container", shortContainerID(resp.ID), "port", port)
+	return ContainerInfo{ContainerID: resp.ID, Port: port, Status: "creating"}, nil
 }
 
-func (o *DockerOrchestrator) getContainerID(ctx context.Context, tenantID string) (string, error) {
-	var cid sql.NullString
-	err := o.db.QueryRowContext(ctx,
-		"SELECT container_id FROM tenants WHERE id = $1", tenantID,
-	).Scan(&cid)
-	if err == sql.ErrNoRows {
-		return "", fmt.Errorf("tenant not found")
+// StartTenant starts an existing tenant container and waits for OpenFang health.
+func (o *DockerOrchestrator) StartTenant(ctx context.Context, tenantID string) error {
+	tenantID = strings.TrimSpace(tenantID)
+	if tenantID == "" {
+		return fmt.Errorf("tenant id is required")
 	}
-	if err != nil {
-		return "", fmt.Errorf("db query: %w", err)
-	}
-	if !cid.Valid || cid.String == "" {
-		return "", fmt.Errorf("no container for tenant")
-	}
-	return cid.String, nil
-}
 
-// Start starts an existing tenant container.
-func (o *DockerOrchestrator) Start(ctx context.Context, tenantID string) error {
-	cid, err := o.getContainerID(ctx, tenantID)
+	runtime, err := o.getTenantRuntime(ctx, tenantID)
 	if err != nil {
 		return err
 	}
-	o.log.Info("starting container", "tenant", tenantID)
-	return o.cli.ContainerStart(ctx, cid, container.StartOptions{})
+
+	containerID := ""
+	port := 0
+	if runtime.ContainerID.Valid {
+		containerID = runtime.ContainerID.String
+	}
+	if runtime.ContainerPort.Valid {
+		port = int(runtime.ContainerPort.Int64)
+	}
+
+	if containerID == "" {
+		created, err := o.CreateTenant(ctx, TenantConfig{TenantID: tenantID})
+		if err != nil {
+			return err
+		}
+		containerID = created.ContainerID
+		port = created.Port
+	}
+
+	o.log.Info("starting container", "tenant", tenantID, "container", shortContainerID(containerID), "port", port)
+	if err := o.cli.ContainerStart(ctx, containerID, container.StartOptions{}); err != nil && !isAlreadyStartedErr(err) {
+		return fmt.Errorf("container start: %w", err)
+	}
+
+	if port <= 0 {
+		port = o.portFromContainer(ctx, containerID)
+		if port <= 0 {
+			return fmt.Errorf("missing port for tenant %s", tenantID)
+		}
+		if err := o.updateTenantRuntime(ctx, tenantID, sql.NullString{String: containerID, Valid: true}, sql.NullInt64{Int64: int64(port), Valid: true}); err != nil {
+			return err
+		}
+	}
+
+	if err := waitForOpenFang(ctx, openFangHealthHost, port, openFangStartTimeout); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// Stop stops a tenant container.
-func (o *DockerOrchestrator) Stop(ctx context.Context, tenantID string) error {
-	cid, err := o.getContainerID(ctx, tenantID)
+// StopTenant gracefully stops a tenant container.
+func (o *DockerOrchestrator) StopTenant(ctx context.Context, tenantID string) error {
+	runtime, err := o.getTenantRuntime(ctx, tenantID)
 	if err != nil {
 		return err
 	}
-	o.log.Info("stopping container", "tenant", tenantID)
+	if !runtime.ContainerID.Valid || runtime.ContainerID.String == "" {
+		return fmt.Errorf("no container for tenant")
+	}
+
+	o.log.Info("stopping container", "tenant", tenantID, "container", shortContainerID(runtime.ContainerID.String))
 	timeout := 10
-	return o.cli.ContainerStop(ctx, cid, container.StopOptions{Timeout: &timeout})
-}
-
-// Delete stops and removes a tenant container.
-func (o *DockerOrchestrator) Delete(ctx context.Context, tenantID string) error {
-	cid, err := o.getContainerID(ctx, tenantID)
-	if err != nil {
-		return err
-	}
-	o.log.Info("deleting container", "tenant", tenantID)
-
-	timeout := 5
-	_ = o.cli.ContainerStop(ctx, cid, container.StopOptions{Timeout: &timeout})
-
-	if err := o.cli.ContainerRemove(ctx, cid, container.RemoveOptions{Force: true}); err != nil {
-		return fmt.Errorf("container remove: %w", err)
-	}
-
-	_, err = o.db.ExecContext(ctx,
-		"UPDATE tenants SET container_id = NULL WHERE id = $1", tenantID,
-	)
-	if err != nil {
-		return fmt.Errorf("db update: %w", err)
+	if err := o.cli.ContainerStop(ctx, runtime.ContainerID.String, container.StopOptions{Timeout: &timeout}); err != nil {
+		if client.IsErrNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("container stop: %w", err)
 	}
 	return nil
 }
 
-// Status returns the current status of a tenant container.
-func (o *DockerOrchestrator) Status(ctx context.Context, tenantID string) (*ContainerStatus, error) {
-	cid, err := o.getContainerID(ctx, tenantID)
+// DestroyTenant force-removes tenant container and config.
+func (o *DockerOrchestrator) DestroyTenant(ctx context.Context, tenantID string) error {
+	runtime, err := o.getTenantRuntime(ctx, tenantID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	info, err := o.cli.ContainerInspect(ctx, cid)
+	if runtime.ContainerID.Valid && runtime.ContainerID.String != "" {
+		o.log.Info("destroying container", "tenant", tenantID, "container", shortContainerID(runtime.ContainerID.String))
+		if err := o.cli.ContainerRemove(ctx, runtime.ContainerID.String, container.RemoveOptions{Force: true}); err != nil && !client.IsErrNotFound(err) {
+			return fmt.Errorf("container remove: %w", err)
+		}
+	}
+
+	if err := CleanupConfig(tenantID); err != nil {
+		return err
+	}
+
+	if err := o.updateTenantRuntime(ctx, tenantID, sql.NullString{}, sql.NullInt64{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetStatus returns combined Docker + OpenFang status for one tenant.
+func (o *DockerOrchestrator) GetStatus(ctx context.Context, tenantID string) (TenantStatus, error) {
+	runtime, err := o.getTenantRuntime(ctx, tenantID)
 	if err != nil {
-		return nil, fmt.Errorf("inspect: %w", err)
+		return TenantStatus{}, err
 	}
 
-	status := &ContainerStatus{
-		Running: info.State.Running,
-		Health:  "unknown",
+	status := TenantStatus{TenantID: tenantID, Status: "stopped"}
+	if runtime.ContainerID.Valid {
+		status.ContainerID = runtime.ContainerID.String
+	}
+	if runtime.ContainerPort.Valid {
+		status.Port = int(runtime.ContainerPort.Int64)
+	}
+	if status.ContainerID == "" {
+		return status, nil
 	}
 
-	if info.State.StartedAt != "" {
-		status.StartedAt, _ = time.Parse(time.RFC3339Nano, info.State.StartedAt)
+	inspect, err := o.cli.ContainerInspect(ctx, status.ContainerID)
+	if err != nil {
+		if client.IsErrNotFound(err) {
+			status.Status = "error"
+			status.OpenFangOK = false
+			return status, nil
+		}
+		return TenantStatus{}, fmt.Errorf("inspect container: %w", err)
 	}
 
-	if info.State.Health != nil {
-		status.Health = string(info.State.Health.Status)
+	status.Status = mapContainerStateToTenantStatus(inspect.State)
+	if status.Port == 0 {
+		if p := parseLabelPort(inspect.Config.Labels[labelPort]); p > 0 {
+			status.Port = p
+		}
 	}
 
+	if status.Status == "running" && status.Port > 0 {
+		status.OpenFangOK = CheckOpenFangHealth(openFangHealthHost, status.Port)
+	}
 	return status, nil
+}
+
+// ListTenants lists Docker-managed tenant containers.
+func (o *DockerOrchestrator) ListTenants(ctx context.Context) ([]TenantStatus, error) {
+	containers, err := o.cli.ContainerList(ctx, container.ListOptions{
+		All: true,
+		Filters: filters.NewArgs(
+			filters.Arg("label", labelTenantID),
+		),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list containers: %w", err)
+	}
+
+	results := make([]TenantStatus, 0, len(containers))
+	for _, c := range containers {
+		tenantID := strings.TrimSpace(c.Labels[labelTenantID])
+		if tenantID == "" {
+			continue
+		}
+
+		status := TenantStatus{
+			TenantID:    tenantID,
+			ContainerID: c.ID,
+			Port:        parseLabelPort(c.Labels[labelPort]),
+			Status:      mapContainerStateStringToTenantStatus(c.State),
+		}
+		if status.Status == "running" && status.Port > 0 {
+			status.OpenFangOK = CheckOpenFangHealth(openFangHealthHost, status.Port)
+		}
+
+		results = append(results, status)
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].TenantID < results[j].TenantID
+	})
+
+	return results, nil
 }
 
 // Exec runs a command inside a tenant container and returns the output.
 func (o *DockerOrchestrator) Exec(ctx context.Context, tenantID string, cmd []string) (string, error) {
-	cid, err := o.getContainerID(ctx, tenantID)
+	runtime, err := o.getTenantRuntime(ctx, tenantID)
 	if err != nil {
 		return "", err
+	}
+	if !runtime.ContainerID.Valid || runtime.ContainerID.String == "" {
+		return "", fmt.Errorf("no container for tenant")
 	}
 
 	o.log.Info("exec in container", "tenant", tenantID, "cmd", cmd)
@@ -278,7 +417,7 @@ func (o *DockerOrchestrator) Exec(ctx context.Context, tenantID string, cmd []st
 		AttachStderr: true,
 	}
 
-	execResp, err := o.cli.ContainerExecCreate(ctx, cid, execCfg)
+	execResp, err := o.cli.ContainerExecCreate(ctx, runtime.ContainerID.String, execCfg)
 	if err != nil {
 		return "", fmt.Errorf("exec create: %w", err)
 	}
@@ -300,4 +439,199 @@ func (o *DockerOrchestrator) Exec(ctx context.Context, tenantID string, cmd []st
 		output += "\n" + errStr
 	}
 	return output, nil
+}
+
+type tenantRuntime struct {
+	ContainerID   sql.NullString
+	ContainerPort sql.NullInt64
+}
+
+func (o *DockerOrchestrator) getTenantRuntime(ctx context.Context, tenantID string) (tenantRuntime, error) {
+	if o.db == nil {
+		return tenantRuntime{}, fmt.Errorf("database is not configured")
+	}
+
+	var runtime tenantRuntime
+	err := o.db.QueryRowContext(ctx,
+		"SELECT container_id, container_port FROM tenants WHERE id = $1",
+		tenantID,
+	).Scan(&runtime.ContainerID, &runtime.ContainerPort)
+	if errors.Is(err, sql.ErrNoRows) {
+		return tenantRuntime{}, fmt.Errorf("tenant not found")
+	}
+	if err != nil {
+		return tenantRuntime{}, fmt.Errorf("tenant query: %w", err)
+	}
+	return runtime, nil
+}
+
+func (o *DockerOrchestrator) updateTenantRuntime(ctx context.Context, tenantID string, containerID sql.NullString, port sql.NullInt64) error {
+	if o.db == nil {
+		return fmt.Errorf("database is not configured")
+	}
+
+	res, err := o.db.ExecContext(ctx,
+		"UPDATE tenants SET container_id = $1, container_port = $2 WHERE id = $3",
+		nullableString(containerID), nullableInt64(port), tenantID,
+	)
+	if err != nil {
+		return fmt.Errorf("update tenant runtime: %w", err)
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("tenant not found")
+	}
+	return nil
+}
+
+func (o *DockerOrchestrator) allocatePort(ctx context.Context) (int, error) {
+	if o.db == nil {
+		return 0, fmt.Errorf("database is not configured")
+	}
+
+	tx, err := o.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Serialize allocations so each create gets a unique sequential host port.
+	if _, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock($1)", int64(4200)); err != nil {
+		return 0, fmt.Errorf("acquire port allocation lock: %w", err)
+	}
+
+	var ports []int
+	rows, err := tx.QueryContext(ctx, "SELECT container_port FROM tenants WHERE container_port IS NOT NULL ORDER BY container_port")
+	if err != nil {
+		return 0, fmt.Errorf("query ports: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var p int
+		if err := rows.Scan(&p); err != nil {
+			return 0, fmt.Errorf("scan port: %w", err)
+		}
+		ports = append(ports, p)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, fmt.Errorf("read ports: %w", err)
+	}
+
+	next := nextSequentialPort(tenantPort, ports)
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return next, nil
+}
+
+func mapContainerStateToTenantStatus(state *container.State) string {
+	if state == nil {
+		return "error"
+	}
+	return mapContainerStateStringToTenantStatus(state.Status)
+}
+
+func mapContainerStateStringToTenantStatus(state string) string {
+	switch strings.ToLower(strings.TrimSpace(state)) {
+	case "running":
+		return "running"
+	case "created", "restarting":
+		return "creating"
+	case "exited", "paused", "removing":
+		return "stopped"
+	case "dead":
+		return "error"
+	default:
+		return "error"
+	}
+}
+
+func waitForOpenFang(ctx context.Context, host string, port int, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		if CheckOpenFangHealth(host, port) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("openfang health check timed out on %s:%d", host, port)
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(1 * time.Second):
+		}
+	}
+}
+
+func nextSequentialPort(base int, assigned []int) int {
+	if len(assigned) == 0 {
+		return base
+	}
+
+	sort.Ints(assigned)
+	candidate := base
+	for _, used := range assigned {
+		if used < candidate {
+			continue
+		}
+		if used == candidate {
+			candidate++
+			continue
+		}
+		if used > candidate {
+			return candidate
+		}
+	}
+	return candidate
+}
+
+func parseLabelPort(raw string) int {
+	p, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || p <= 0 {
+		return 0
+	}
+	return p
+}
+
+func (o *DockerOrchestrator) portFromContainer(ctx context.Context, containerID string) int {
+	inspect, err := o.cli.ContainerInspect(ctx, containerID)
+	if err != nil {
+		return 0
+	}
+	if inspect.Config == nil || inspect.Config.Labels == nil {
+		return 0
+	}
+	return parseLabelPort(inspect.Config.Labels[labelPort])
+}
+
+func isAlreadyStartedErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "already started") || strings.Contains(msg, "already running")
+}
+
+func nullableString(v sql.NullString) any {
+	if !v.Valid {
+		return nil
+	}
+	return v.String
+}
+
+func nullableInt64(v sql.NullInt64) any {
+	if !v.Valid {
+		return nil
+	}
+	return v.Int64
+}
+
+func shortContainerID(containerID string) string {
+	if len(containerID) > 12 {
+		return containerID[:12]
+	}
+	return containerID
 }

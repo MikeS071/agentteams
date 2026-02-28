@@ -26,7 +26,7 @@ func PauseTenant(db *sql.DB, orch orchestrator.TenantOrchestrator, tenantID stri
 		return fmt.Errorf("tenant orchestrator is not configured")
 	}
 
-	if err := orch.Stop(ctx, tenantID); err != nil {
+	if err := orch.StopTenant(ctx, tenantID); err != nil {
 		return fmt.Errorf("stop tenant container: %w", err)
 	}
 
@@ -51,7 +51,7 @@ func ResumeTenant(db *sql.DB, orch orchestrator.TenantOrchestrator, tenantID str
 		return fmt.Errorf("tenant not found")
 	}
 
-	if err := orch.Start(ctx, tenantID); err != nil {
+	if err := orch.StartTenant(ctx, tenantID); err != nil {
 		return fmt.Errorf("start tenant container: %w", err)
 	}
 
