@@ -7,9 +7,10 @@ type Model = { id: string; name: string; provider: string };
 type ChatInputProps = {
   onSend: (message: string, model?: string) => Promise<void>;
   disabled?: boolean;
+  preferredModel?: string;
 };
 
-export default function ChatInput({ onSend, disabled = false }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled = false, preferredModel }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
@@ -19,12 +20,20 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
       .then((r) => r.json())
       .then((d: { models: Model[] }) => {
         setModels(d.models || []);
-        if (d.models?.length && !selectedModel) {
-          setSelectedModel(d.models[0].id);
-        }
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (models.length === 0) {
+      return;
+    }
+    const preferredExists = preferredModel && models.some((m) => m.id === preferredModel);
+    const nextModel = preferredExists ? preferredModel : selectedModel || models[0]?.id;
+    if (nextModel && nextModel !== selectedModel) {
+      setSelectedModel(nextModel);
+    }
+  }, [models, preferredModel, selectedModel]);
 
   async function submit() {
     const text = value.trim();
@@ -60,7 +69,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
-                className="h-9 rounded-lg border border-[#2a2a3d] bg-[#0d0d15] px-2 text-xs text-gray-300 focus:border-[#6c5ce7] focus:outline-none"
+                className="h-9 rounded-lg border border-[#2a2a3d] bg-[#0d0d15] px-2 text-xs text-gray-300 focus:border-[#3b82f6] focus:outline-none"
               >
                 {models.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -73,7 +82,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
               type="button"
               onClick={() => void submit()}
               disabled={disabled || value.trim().length === 0}
-              className="rounded-lg bg-[#6c5ce7] px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Send
             </button>
