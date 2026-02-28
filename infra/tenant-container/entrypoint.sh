@@ -1,22 +1,16 @@
 #!/bin/bash
-# Placeholder entrypoint — will be replaced with `openfang start`
-echo "AgentTeams tenant container starting..."
-echo "TENANT_ID: ${TENANT_ID}"
+set -euo pipefail
 
-# Start simple health server using Node.js
-node -e "
-const http = require('http');
-const server = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200, {'Content-Type': 'application/json'});
-    res.end(JSON.stringify({status: 'healthy', tenant: process.env.TENANT_ID, uptime: process.uptime()}));
-  } else {
-    res.writeHead(404);
-    res.end('Not found');
-  }
-});
-server.listen(4200, () => console.log('Health endpoint on :4200'));
-" &
+# Start OpenFang in background
+openfang start --daemon
+
+# Bridge /healthz on :4200 to OpenFang's /health on :4201
+node /usr/local/bin/openfang-port-proxy.js &
+
+# Wait for health
+until curl -sf http://localhost:4200/healthz; do
+  sleep 1
+done
 
 # Keep container alive
 exec tail -f /dev/null
