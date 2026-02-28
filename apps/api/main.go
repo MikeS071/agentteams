@@ -152,6 +152,7 @@ func main() {
 	slog.Info("admin routes mounted")
 
 	coordHandler.Mount(mux)
+	routes.MountSwarmRoutes(mux, coordHandler)
 	slog.Info("coordinator handler mounted")
 
 	mountHandsProxyRoutes(mux)
