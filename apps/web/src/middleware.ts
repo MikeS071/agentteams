@@ -79,5 +79,7 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/:path*"],
+  matcher: [
+    "/((?!landing\.html|images/|_next/static|_next/image|favicon\.ico).*)",
+  ],
 };
