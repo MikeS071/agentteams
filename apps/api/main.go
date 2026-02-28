@@ -16,7 +16,9 @@ import (
 	"github.com/agentteams/api/channels"
 	"github.com/agentteams/api/coordinator"
 	"github.com/agentteams/api/llmproxy"
+	"github.com/agentteams/api/middleware"
 	"github.com/agentteams/api/orchestrator"
+	"github.com/agentteams/api/routes"
 	"github.com/agentteams/api/terminal"
 	"github.com/agentteams/api/workflows"
 
@@ -269,6 +271,10 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "active"})
 	})
 
+	adminHandler := routes.NewAdminHandler(db, orch)
+	adminHandler.Mount(mux)
+	slog.Info("admin routes mounted")
+
 	coordHandler.Mount(mux)
 	slog.Info("coordinator handler mounted")
 
@@ -278,7 +284,7 @@ func main() {
 	}
 
 	log.Println("API server listening on :8080")
-	handler := applyRequestBodyLimit(applyAuth(mux))
+	handler := applyRequestBodyLimit(applyAuth(middleware.ApplyAdmin(mux)))
 	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
