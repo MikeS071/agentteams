@@ -3,7 +3,7 @@ package routes
 import (
 	"net/http"
 
-	"github.com/agentteams/api/coordinator"
+	"github.com/agentsquads/api/coordinator"
 )
 
 // MountSwarmRoutes registers swarm coordinator endpoints.
