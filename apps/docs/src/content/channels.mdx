@@ -1,0 +1,32 @@
+# Channels
+
+AgentTeams supports Telegram, WhatsApp, and embeddable Webchat.
+
+## Telegram Setup
+
+1. Create bot credentials via `@BotFather`.
+2. Add token in `Settings -> Channels -> Telegram`.
+3. Configure webhook endpoint and verify delivery.
+4. Map bot to a workflow or agent handoff rule.
+
+## WhatsApp Setup
+
+1. Connect your WhatsApp Business API provider.
+2. Register phone number and webhook callbacks.
+3. Add credentials in `Settings -> Channels -> WhatsApp`.
+4. Define message templates and compliance defaults.
+
+## Webchat Embed
+
+Use the embed snippet in your site/app shell:
+
+```html
+<script src="https://cdn.agentteams.dev/webchat.js" defer></script>
+<div id="agentteams-webchat" data-workspace="YOUR_WORKSPACE_ID"></div>
+```
+
+### Recommended Practices
+
+- Route each channel to a specific workflow entrypoint.
+- Keep channel-specific prompts for tone and response length.
+- Enable usage tracking per channel for cost visibility.
