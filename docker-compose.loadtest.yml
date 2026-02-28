@@ -1,0 +1,50 @@
+services:
+  influxdb:
+    image: influxdb:1.8
+    container_name: at-loadtest-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      INFLUXDB_DB: k6
+      INFLUXDB_HTTP_AUTH_ENABLED: "false"
+    volumes:
+      - loadtest-influxdb-data:/var/lib/influxdb
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: at-loadtest-grafana
+    depends_on:
+      - influxdb
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - loadtest-grafana-data:/var/lib/grafana
+      - ./tests/load/grafana/provisioning:/etc/grafana/provisioning:ro
+
+  k6:
+    image: grafana/k6:0.52.0
+    container_name: at-loadtest-k6
+    depends_on:
+      - influxdb
+    environment:
+      WEB_BASE_URL: ${WEB_BASE_URL:-http://host.docker.internal:3000}
+      API_BASE_URL: ${API_BASE_URL:-http://host.docker.internal:8080}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      TENANT_IDS: ${TENANT_IDS:-}
+      WS_TENANT_IDS: ${WS_TENANT_IDS:-}
+      INFERENCE_BUDGET_MS: ${INFERENCE_BUDGET_MS:-0}
+    volumes:
+      - ./tests/load:/work/tests/load
+    working_dir: /work
+    entrypoint: ["/bin/sh", "-lc"]
+    command: >-
+      sleep infinity
+
+volumes:
+  loadtest-influxdb-data:
+  loadtest-grafana-data:
