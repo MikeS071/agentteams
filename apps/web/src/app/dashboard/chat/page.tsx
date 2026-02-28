@@ -6,7 +6,7 @@ import ChatInput from "@/components/ChatInput";
 import ChatMessage from "@/components/ChatMessage";
 import AgentPicker from "@/components/AgentPicker";
 import AgentSetup from "@/components/AgentSetup";
-import { AGENTS, getAgent, type AgentType } from "@/lib/agents";
+import { AGENTS, type AgentType } from "@/lib/agents";
 
 type Role = "user" | "assistant" | "system";
 type Message = { id?: string; role: Role; content: string; createdAt?: string };
