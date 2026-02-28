@@ -5,7 +5,7 @@ import type { AgentType } from "@/lib/agents";
 
 type Props = {
   agent: AgentType;
-  onStart: (context: string) => void;
+  onStart: (values: Record<string, string>) => void;
   onBack: () => void;
 };
 
@@ -14,15 +14,7 @@ export default function AgentSetup({ agent, onStart, onBack }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Build context string from fields
-    const parts: string[] = [];
-    for (const field of agent.fields) {
-      const val = values[field.id]?.trim();
-      if (val) {
-        parts.push(`${field.label}: ${val}`);
-      }
-    }
-    onStart(parts.join("\n"));
+    onStart(values);
   }
 
   const requiredFilled = agent.fields
