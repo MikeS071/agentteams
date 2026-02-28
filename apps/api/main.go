@@ -49,6 +49,9 @@ func main() {
 	var orch orchestrator.TenantOrchestrator
 	var channelRouter *channels.Router
 	var channelLinks *channels.LinkStore
+	var redisClient *redis.Client
+
+	coordHandler := coordinator.NewHandler(nil)
 
 	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
 		var err error
@@ -56,9 +59,11 @@ func main() {
 		if err != nil {
 			slog.Error("failed to connect to database", "err", err)
 		} else {
-			redisClient := initRedisClient()
+			redisClient = initRedisClient()
+			coordHandler = coordinator.NewHandler(redisClient)
 			channelLinks = channels.NewLinkStore(db)
 			channelRouter = channels.NewRouter(db, redisClient)
+			channelRouter.SetAgentBridge(coordinator.NewBridge(coordHandler))
 
 			if redisClient != nil {
 				fanout := channels.NewFanout(redisClient, channelLinks)
@@ -125,7 +130,9 @@ func main() {
 		})
 		if err != nil {
 			status := http.StatusInternalServerError
-			if isInboundValidationError(err) {
+			if isInboundConflictError(err) {
+				status = http.StatusConflict
+			} else if isInboundValidationError(err) {
 				status = http.StatusBadRequest
 			}
 			writeAPIError(w, status, err.Error())
@@ -257,7 +264,6 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "active"})
 	})
 
-	coordHandler := coordinator.NewHandler()
 	coordHandler.Mount(mux)
 	slog.Info("coordinator handler mounted")
 
@@ -297,7 +303,14 @@ func isInboundValidationError(err error) bool {
 		return true
 	}
 	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "required") || strings.Contains(msg, "not found")
+	return strings.Contains(msg, "required") || strings.Contains(msg, "not found") || strings.Contains(msg, "missing")
+}
+
+func isInboundConflictError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "already running")
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {
