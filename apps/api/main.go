@@ -4,21 +4,21 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/agentteams/api/channels"
-	"github.com/agentteams/api/coordinator"
-	"github.com/agentteams/api/llmproxy"
-	"github.com/agentteams/api/orchestrator"
-	"github.com/agentteams/api/terminal"
-	"github.com/agentteams/api/workflows"
+	"github.com/agentsquads/api/channels"
+	"github.com/agentsquads/api/coordinator"
+	"github.com/agentsquads/api/llmproxy"
+	"github.com/agentsquads/api/middleware"
+	"github.com/agentsquads/api/orchestrator"
+	"github.com/agentsquads/api/routes"
+	"github.com/agentsquads/api/terminal"
+	"github.com/agentsquads/api/workflows"
 
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
@@ -28,7 +28,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprintln(w, "Hello from AgentTeams API")
+		fmt.Fprintln(w, "Hello from AgentSquads API")
 	})
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
@@ -50,6 +50,7 @@ func main() {
 	var orch orchestrator.TenantOrchestrator
 	var channelRouter *channels.Router
 	var channelLinks *channels.LinkStore
+	var channelCreds *channels.CredentialsStore
 	var redisClient *redis.Client
 
 	coordHandler := coordinator.NewHandler(nil)
@@ -63,11 +64,12 @@ func main() {
 			redisClient = initRedisClient()
 			coordHandler = coordinator.NewHandler(redisClient)
 			channelLinks = channels.NewLinkStore(db)
+			channelCreds = channels.NewCredentialsStore(db)
 			channelRouter = channels.NewRouter(db, redisClient)
 			channelRouter.SetAgentBridge(coordinator.NewBridge(coordHandler))
 
 			if redisClient != nil {
-				fanout := channels.NewFanout(redisClient, channelLinks)
+				fanout := channels.NewFanout(redisClient, channelLinks, channelCreds)
 				go func() {
 					if err := fanout.Start(context.Background()); err != nil {
 						slog.Error("channel fanout stopped", "err", err)
@@ -100,137 +102,9 @@ func main() {
 		slog.Warn("DATABASE_URL not set, LLM proxy and terminal disabled")
 	}
 
-	mux.HandleFunc("POST /api/channels/inbound", func(w http.ResponseWriter, r *http.Request) {
-		if channelRouter == nil {
-			writeAPIError(w, http.StatusServiceUnavailable, "channel router is not configured")
-			return
-		}
-
-		var req struct {
-			TenantID    string            `json:"tenant_id"`
-			TenantIDAlt string            `json:"tenantId"`
-			Content     string            `json:"content"`
-			Channel     string            `json:"channel"`
-			Metadata    map[string]string `json:"metadata"`
-		}
-		if err := decodeJSONStrict(r, &req); err != nil {
-			writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
-			return
-		}
-
-		tenantID := strings.TrimSpace(req.TenantID)
-		if tenantID == "" {
-			tenantID = strings.TrimSpace(req.TenantIDAlt)
-		}
-
-		out, err := channelRouter.Route(r.Context(), channels.InboundMessage{
-			TenantID: tenantID,
-			Content:  req.Content,
-			Channel:  req.Channel,
-			Metadata: req.Metadata,
-		})
-		if err != nil {
-			status := http.StatusInternalServerError
-			if isInboundConflictError(err) {
-				status = http.StatusConflict
-			} else if isInboundValidationError(err) {
-				status = http.StatusBadRequest
-			}
-			writeAPIError(w, status, err.Error())
-			return
-		}
-
-		writeJSON(w, http.StatusOK, out)
-	})
-
-	mux.HandleFunc("GET /api/tenants/{id}/channels", func(w http.ResponseWriter, r *http.Request) {
-		if channelLinks == nil {
-			writeAPIError(w, http.StatusServiceUnavailable, "channel links are not configured")
-			return
-		}
-
-		tenantID := strings.TrimSpace(r.PathValue("id"))
-		if tenantID == "" {
-			writeAPIError(w, http.StatusBadRequest, "missing tenant id")
-			return
-		}
-
-		linked, err := channelLinks.GetChannels(tenantID)
-		if err != nil {
-			writeAPIError(w, http.StatusInternalServerError, "failed to get channels")
-			return
-		}
-
-		writeJSON(w, http.StatusOK, map[string]any{"channels": linked})
-	})
-
-	mux.HandleFunc("POST /api/tenants/{id}/channels", func(w http.ResponseWriter, r *http.Request) {
-		if channelLinks == nil {
-			writeAPIError(w, http.StatusServiceUnavailable, "channel links are not configured")
-			return
-		}
-
-		tenantID := strings.TrimSpace(r.PathValue("id"))
-		if tenantID == "" {
-			writeAPIError(w, http.StatusBadRequest, "missing tenant id")
-			return
-		}
-
-		var req struct {
-			Channel          string `json:"channel"`
-			ChannelUserID    string `json:"channel_user_id"`
-			ChannelUserIDAlt string `json:"channelUserId"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
-			return
-		}
-
-		channelUserID := strings.TrimSpace(req.ChannelUserID)
-		if channelUserID == "" {
-			channelUserID = strings.TrimSpace(req.ChannelUserIDAlt)
-		}
-		if channelUserID == "" {
-			writeAPIError(w, http.StatusBadRequest, "channel user id is required")
-			return
-		}
-
-		if err := channelLinks.LinkChannel(tenantID, req.Channel, channelUserID); err != nil {
-			if errors.Is(err, channels.ErrInvalidChannel) {
-				writeAPIError(w, http.StatusBadRequest, err.Error())
-				return
-			}
-			writeAPIError(w, http.StatusInternalServerError, "failed to link channel")
-			return
-		}
-
-		writeJSON(w, http.StatusCreated, map[string]string{"status": "linked"})
-	})
-
-	mux.HandleFunc("DELETE /api/tenants/{id}/channels/{channel}", func(w http.ResponseWriter, r *http.Request) {
-		if channelLinks == nil {
-			writeAPIError(w, http.StatusServiceUnavailable, "channel links are not configured")
-			return
-		}
-
-		tenantID := strings.TrimSpace(r.PathValue("id"))
-		channel := strings.TrimSpace(r.PathValue("channel"))
-		if tenantID == "" || channel == "" {
-			writeAPIError(w, http.StatusBadRequest, "missing tenant id or channel")
-			return
-		}
-
-		if err := channelLinks.UnlinkChannel(tenantID, channel); err != nil {
-			if errors.Is(err, channels.ErrInvalidChannel) {
-				writeAPIError(w, http.StatusBadRequest, err.Error())
-				return
-			}
-			writeAPIError(w, http.StatusInternalServerError, "failed to unlink channel")
-			return
-		}
-
-		w.WriteHeader(http.StatusNoContent)
-	})
+	channelHandler := routes.NewChannelHandler(db, channelRouter, channelLinks, channelCreds)
+	channelHandler.Mount(mux)
+	slog.Info("channel routes mounted")
 
 	mux.HandleFunc("POST /api/tenants/{id}/resume", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil {
@@ -269,6 +143,10 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "active"})
 	})
 
+	adminHandler := routes.NewAdminHandler(db, orch)
+	adminHandler.Mount(mux)
+	slog.Info("admin routes mounted")
+
 	coordHandler.Mount(mux)
 	slog.Info("coordinator handler mounted")
 
@@ -278,7 +156,7 @@ func main() {
 	}
 
 	log.Println("API server listening on :8080")
-	handler := applyRequestBodyLimit(applyAuth(mux))
+	handler := applyRequestBodyLimit(applyAuth(middleware.ApplyAdmin(mux)))
 	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
@@ -301,24 +179,6 @@ func initRedisClient() *redis.Client {
 	return client
 }
 
-func isInboundValidationError(err error) bool {
-	if err == nil {
-		return false
-	}
-	if errors.Is(err, channels.ErrInvalidChannel) {
-		return true
-	}
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "required") || strings.Contains(msg, "not found") || strings.Contains(msg, "missing")
-}
-
-func isInboundConflictError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return strings.Contains(strings.ToLower(err.Error()), "already running")
-}
-
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -327,16 +187,4 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 
 func writeAPIError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
-}
-
-func decodeJSONStrict(r *http.Request, dest any) error {
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(dest); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&struct{}{}); err != io.EOF {
-		return errors.New("request body must contain a single JSON object")
-	}
-	return nil
 }

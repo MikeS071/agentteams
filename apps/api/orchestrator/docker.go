@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	tenantImage   = "agentteams-tenant:latest"
-	tenantNetwork = "agentteams-tenant-net"
+	tenantImage   = "agentsquads-tenant:latest"
+	tenantNetwork = "agentsquads-tenant-net"
 	memoryLimit   = 512 * 1024 * 1024 // 512MB
 	cpuQuota      = 50000             // 0.5 cores (50% of 100000)
 	cpuPeriod     = 100000
@@ -78,7 +78,7 @@ func (o *DockerOrchestrator) EnsureNetwork(ctx context.Context) error {
 	resp, err := o.cli.NetworkCreate(ctx, tenantNetwork, network.CreateOptions{
 		Driver:   "bridge",
 		Internal: true,
-		Labels:   map[string]string{"agentteams.managed": "true"},
+		Labels:   map[string]string{"agentsquads.managed": "true"},
 	})
 	if err != nil {
 		return fmt.Errorf("network create: %w", err)
@@ -120,7 +120,7 @@ func (o *DockerOrchestrator) Create(ctx context.Context, tenantID string) (*Cont
 				"LLM_PROXY_URL=" + o.llmProxyURL,
 			},
 			Labels: map[string]string{
-				"agentteams.tenant": tenantID,
+				"agentsquads.tenant": tenantID,
 			},
 		},
 		&container.HostConfig{

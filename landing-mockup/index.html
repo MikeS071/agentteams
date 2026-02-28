@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentSquads — Your AI Team. Always On.</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --bg3: #1a1a2e;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --accent3: #00cec9;
+    --text: #e8e8f0;
+    --text2: #a0a0b8;
+    --text3: #6c6c80;
+    --border: #2a2a3e;
+    --card: #16162a;
+    --glow: rgba(108, 92, 231, 0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Nav ─────────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; width: 100%; z-index: 100;
+    backdrop-filter: blur(20px);
+    background: rgba(10, 10, 15, 0.85);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+  .nav-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  .logo {
+    font-size: 1.25rem; font-weight: 700; color: var(--text);
+    text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .logo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+  }
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-links a {
+    color: var(--text2); text-decoration: none; font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── Buttons ─────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.65rem 1.5rem; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 600;
+    text-decoration: none; cursor: pointer; border: none;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #8b7cf7);
+    color: white;
+    box-shadow: 0 4px 20px rgba(108, 92, 231, 0.3);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 30px rgba(108, 92, 231, 0.4);
+  }
+  .btn-secondary {
+    background: transparent; color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent2); color: var(--text); }
+
+  /* ── Hero ─────────────────────────────────────────── */
+  .hero {
+    min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; text-align: center;
+    padding: 8rem 2rem 4rem;
+    position: relative;
+  }
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(108, 92, 231, 0.08), transparent),
+      radial-gradient(ellipse 40% 40% at 80% 20%, rgba(0, 206, 201, 0.05), transparent);
+    pointer-events: none;
+  }
+  .hero-content { max-width: 800px; position: relative; z-index: 1; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 1rem; border-radius: 50px;
+    background: var(--bg3); border: 1px solid var(--border);
+    font-size: 0.8rem; color: var(--accent2); margin-bottom: 2rem;
+  }
+  .hero-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent3); animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4.2rem);
+    font-weight: 800; line-height: 1.1;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 1.2rem; color: var(--text2);
+    max-width: 600px; margin: 0 auto 2.5rem;
+  }
+  .hero-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .hero-stats {
+    display: flex; gap: 3rem; justify-content: center;
+    margin-top: 4rem; padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .num {
+    font-size: 2rem; font-weight: 800; color: var(--accent2);
+  }
+  .hero-stat .label { font-size: 0.8rem; color: var(--text3); margin-top: 0.25rem; }
+
+  /* ── Section base ────────────────────────────────── */
+  section { padding: 6rem 2rem; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .section-label {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--accent2); margin-bottom: 1rem;
+  }
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800; margin-bottom: 1rem;
+  }
+  .section-desc {
+    font-size: 1.1rem; color: var(--text2); max-width: 600px;
+    margin-bottom: 3rem;
+  }
+
+  /* ── Agent Fleet (inspired by outtake) ───────────── */
+  .fleet-section { background: var(--bg2); }
+  .fleet-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem; margin-top: 3rem;
+  }
+  .fleet-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem;
+    position: relative; overflow: hidden;
+    transition: border-color 0.3s, transform 0.2s;
+  }
+  .fleet-card:hover {
+    border-color: var(--accent); transform: translateY(-2px);
+  }
+  .fleet-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .fleet-card:hover::before { opacity: 1; }
+  .fleet-card-img {
+    width: 100%; height: 180px; object-fit: cover;
+    border-radius: 10px; margin-bottom: 1.25rem;
+    opacity: 0.85; transition: opacity 0.3s;
+  }
+  .fleet-card:hover .fleet-card-img { opacity: 1; }
+  .fleet-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--bg3); display: flex; align-items: center;
+    justify-content: center; font-size: 1.5rem; margin-bottom: 1.25rem;
+    display: none;
+  }
+  .fleet-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .fleet-card p { font-size: 0.9rem; color: var(--text2); line-height: 1.7; }
+  .fleet-status {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    margin-top: 1.25rem; font-size: 0.75rem; color: var(--accent3);
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .fleet-status .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent3); animation: pulse 2s infinite;
+  }
+
+  /* ── How it works ────────────────────────────────── */
+  .steps-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem; margin-top: 3rem;
+  }
+  .step {
+    text-align: center; padding: 2rem;
+  }
+  .step-num {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--bg3); border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; font-weight: 800; color: var(--accent2);
+    margin: 0 auto 1.25rem;
+  }
+  .step h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .step p { font-size: 0.9rem; color: var(--text2); }
+
+  /* ── Terminal mockup ─────────────────────────────── */
+  .terminal-section { background: var(--bg); }
+  .terminal-wrapper {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 3rem; align-items: center; margin-top: 3rem;
+  }
+  .terminal {
+    background: #0d0d1a; border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.82rem; line-height: 1.8;
+  }
+  .terminal-bar {
+    display: flex; gap: 6px; padding: 12px 16px;
+    background: var(--bg3); border-bottom: 1px solid var(--border);
+  }
+  .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal-dot.r { background: #ff5f57; }
+  .terminal-dot.y { background: #febc2e; }
+  .terminal-dot.g { background: #28c840; }
+  .terminal-body { padding: 1.25rem; }
+  .terminal-body .prompt { color: var(--accent3); }
+  .terminal-body .cmd { color: var(--text); }
+  .terminal-body .out { color: var(--text3); }
+  .terminal-body .success { color: #28c840; }
+  .terminal-body .agent { color: var(--accent2); }
+
+  .terminal-features h3 {
+    font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem;
+  }
+  .terminal-features ul {
+    list-style: none; display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  .terminal-features li {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    font-size: 0.95rem; color: var(--text2);
+  }
+  .terminal-features li .check { color: var(--accent3); font-weight: 700; }
+
+  /* ── Channels ────────────────────────────────────── */
+  .channels-section { background: var(--bg2); }
+  .channels-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem; margin-top: 3rem;
+  }
+  .channel-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; text-align: center;
+    transition: border-color 0.3s;
+  }
+  .channel-card:hover { border-color: var(--accent); }
+  .channel-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+  .channel-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .channel-card p { font-size: 0.85rem; color: var(--text2); }
+
+  /* ── Pricing ─────────────────────────────────────── */
+  .pricing-section { background: var(--bg); }
+  .pricing-card {
+    max-width: 500px; margin: 3rem auto 0;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3rem; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .pricing-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+  }
+  .pricing-card .price {
+    font-size: 3rem; font-weight: 800; margin: 1rem 0 0.5rem;
+  }
+  .pricing-card .price span { font-size: 1rem; font-weight: 400; color: var(--text2); }
+  .pricing-card .subtitle { font-size: 1rem; color: var(--text2); margin-bottom: 2rem; }
+  .pricing-features {
+    list-style: none; text-align: left; margin-bottom: 2rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  .pricing-features li {
+    display: flex; align-items: center; gap: 0.75rem;
+    font-size: 0.95rem; color: var(--text2);
+  }
+  .pricing-features li .check { color: var(--accent3); }
+  .free-badge {
+    display: inline-block; padding: 0.3rem 0.8rem;
+    background: linear-gradient(135deg, rgba(108, 92, 231, 0.2), rgba(0, 206, 201, 0.2));
+    border: 1px solid var(--accent); border-radius: 50px;
+    font-size: 0.8rem; color: var(--accent2); font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  /* ── CTA ─────────────────────────────────────────── */
+  .cta-section {
+    background: var(--bg2); text-align: center;
+    padding: 6rem 2rem;
+  }
+  .cta-section h2 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800; margin-bottom: 1rem;
+  }
+  .cta-section p { font-size: 1.1rem; color: var(--text2); margin-bottom: 2rem; }
+
+  /* ── Footer ──────────────────────────────────────── */
+  footer {
+    padding: 3rem 2rem; border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  footer p { font-size: 0.85rem; color: var(--text3); }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 768px) {
+    .terminal-wrapper { grid-template-columns: 1fr; }
+    .channels-grid { grid-template-columns: 1fr; }
+    .hero-stats { gap: 1.5rem; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-icon">⚡</div>
+      AgentSquads
+    </a>
+    <div class="nav-links">
+      <a href="#agents">Agents</a>
+      <a href="#how">How It Works</a>
+      <a href="#channels">Channels</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#" class="btn btn-primary" style="padding: 0.5rem 1.2rem;">Get Started Free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Open signup — no waitlist
+    </div>
+    <h1>Your AI Agent Team.<br>Always On.</h1>
+    <p>Autonomous agents that research, build, deploy, and manage — on your behalf. Chat from anywhere. Watch them work. Pay only for what you use.</p>
+    <div class="hero-buttons">
+      <a href="#" class="btn btn-primary">Start Free →</a>
+      <a href="#agents" class="btn btn-secondary">See the Agents</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="num">8</div>
+        <div class="label">Pre-built Agents</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">3</div>
+        <div class="label">Channels Synced</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">$0</div>
+        <div class="label">To Get Started</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Agent Fleet -->
+<section class="fleet-section" id="agents">
+  <div class="container">
+    <div class="section-label">the_agent_fleet</div>
+    <h2 class="section-title">Pre-built agents.<br>Ready to work.</h2>
+    <p class="section-desc">Each agent is a specialist. Pick one, follow the guided setup, and let it run. No prompting skills required.</p>
+
+    <div class="fleet-grid">
+      <div class="fleet-card">
+        <img src="images/research.png" alt="Research Assistant" class="fleet-card-img">
+        <div class="fleet-icon">🔬</div>
+        <h3>Research Assistant</h3>
+        <p>Deep autonomous research on any topic. Cross-references sources, evaluates credibility, delivers cited reports.</p>
+        <div class="fleet-status"><span class="dot"></span> ready to deploy</div>
+      </div>
+      <div class="fleet-card">
+        <img src="images/coder.png" alt="Coder" class="fleet-card-img">
+        <div class="fleet-icon">💻</div>
+        <h3>Coder</h3>
+        <p>Builds and deploys apps. Scaffolds Next.js + Supabase, writes tests, ships to Vercel. Agent swarm handles complex builds.</p>
+        <div class="fleet-status"><span class="dot"></span> ready to deploy</div>
+      </div>
+      <div class="fleet-card">
+        <img src="images/leadgen.png" alt="Lead Generator" class="fleet-card-img">
+        <div class="fleet-icon">📊</div>
+        <h3>Lead Generator</h3>
+        <p>Discovers prospects matching your ICP daily. Enriches, scores 0–100, deduplicates, and delivers qualified leads.</p>
+        <div class="fleet-status"><span class="dot"></span> ready to deploy</div>
+      </div>
+      <div class="fleet-card">
+        <img src="images/intel.png" alt="Intelligence Collector" class="fleet-card-img">
+        <div class="fleet-icon">🕵️</div>
+        <h3>Intelligence Collector</h3>
+        <p>OSINT-grade monitoring. Track companies, people, or topics. Change detection, sentiment analysis, knowledge graphs.</p>
+        <div class="fleet-status"><span class="dot"></span> ready to deploy</div>
+      </div>
+      <div class="fleet-card">
+        <img src="images/social.png" alt="Social Manager" class="fleet-card-img">
+        <div class="fleet-icon">🐦</div>
+        <h3>Social Manager</h3>
+        <p>Autonomous X/Twitter management. Creates content, schedules posts, tracks engagement. Nothing posts without your approval.</p>
+        <div class="fleet-status"><span class="dot"></span> ready to deploy</div>
+      </div>
+      <div class="fleet-card">
+        <img src="images/browser.png" alt="Browser Agent" class="fleet-card-img">
+        <div class="fleet-icon">🌐</div>
+        <h3>Browser Agent</h3>
+        <p>Web automation. Navigates sites, fills forms, handles multi-step workflows. Approval gate on any purchase action.</p>
+        <div class="fleet-status"><span class="dot"></span> ready to deploy</div>
+      </div>
+      <div class="fleet-card">
+        <img src="images/clip.png" alt="Clip Creator" class="fleet-card-img">
+        <div class="fleet-icon">🎬</div>
+        <h3>Clip Creator</h3>
+        <p>Turn any video into viral shorts. Identifies best moments, cuts to vertical, adds captions and thumbnails automatically.</p>
+        <div class="fleet-status"><span class="dot"></span> ready to deploy</div>
+      </div>
+      <div class="fleet-card">
+        <img src="images/predictor.png" alt="Predictor" class="fleet-card-img">
+        <div class="fleet-icon">🔮</div>
+        <h3>Predictor</h3>
+        <p>Superforecasting engine. Collects signals, builds calibrated reasoning chains, tracks its own accuracy with Brier scores.</p>
+        <div class="fleet-status"><span class="dot"></span> ready to deploy</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="how">
+  <div class="container">
+    <div class="section-label">how_it_works</div>
+    <h2 class="section-title">Three steps. Your team is live.</h2>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Sign Up</h3>
+        <p>Email, Google, GitHub, or Facebook. Your agent environment spins up in under 30 seconds. Free credits loaded instantly.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Pick an Agent</h3>
+        <p>Browse the catalog. Choose a specialist. Follow the guided setup — topic, depth, format, go. Or just chat freeform.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Watch Them Work</h3>
+        <p>Your agents run autonomously. Check progress in the dashboard, terminal, or chat. Results delivered wherever you are.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Terminal / Swarm -->
+<section class="terminal-section">
+  <div class="container">
+    <div class="section-label">agent_swarm</div>
+    <h2 class="section-title">Not one agent. A coordinated team.</h2>
+    <p class="section-desc">Complex tasks get decomposed and delegated to specialist sub-agents working in parallel. Watch them in real time.</p>
+
+    <div class="terminal-wrapper">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="terminal-dot r"></span>
+          <span class="terminal-dot y"></span>
+          <span class="terminal-dot g"></span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="prompt">$</span> <span class="cmd">agentsquads swarm status</span></div>
+          <br>
+          <div><span class="agent">coordinator</span> <span class="out">task: "Build landing page with auth"</span></div>
+          <div><span class="out">├─</span> <span class="agent">agent-1</span> <span class="success">✓ scaffolding complete</span></div>
+          <div><span class="out">├─</span> <span class="agent">agent-2</span> <span class="cmd">writing auth components...</span></div>
+          <div><span class="out">├─</span> <span class="agent">agent-3</span> <span class="cmd">setting up Supabase schema...</span></div>
+          <div><span class="out">└─</span> <span class="agent">agent-4</span> <span class="out">queued: writing tests</span></div>
+          <br>
+          <div><span class="out">Progress: ██████████░░░░░░ 62%</span></div>
+          <div><span class="out">Tokens used: 45,230 (~$0.18)</span></div>
+          <br>
+          <div><span class="prompt">$</span> <span class="cmd blink">_</span></div>
+        </div>
+      </div>
+
+      <div class="terminal-features">
+        <h3>Full visibility. Full control.</h3>
+        <ul>
+          <li><span class="check">✓</span> Real-time swarm dashboard — see every agent's progress</li>
+          <li><span class="check">✓</span> Web terminal — shell access to your agent environment</li>
+          <li><span class="check">✓</span> Coordinator pattern — one brain, multiple hands</li>
+          <li><span class="check">✓</span> Auto-merge results — sub-agents deliver, coordinator assembles</li>
+          <li><span class="check">✓</span> Cost transparency — per-agent token tracking in real time</li>
+          <li><span class="check">✓</span> Pause, cancel, or redirect any agent mid-task</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Channels -->
+<section class="channels-section" id="channels">
+  <div class="container" style="text-align: center;">
+    <div class="section-label">connected_everywhere</div>
+    <h2 class="section-title">One conversation. Every channel.</h2>
+    <p class="section-desc" style="margin: 0 auto 3rem;">Message from Telegram. Continue on WhatsApp. Check the web dashboard. Same agents, same context, always in sync.</p>
+
+    <div class="channels-grid">
+      <div class="channel-card">
+        <div class="channel-icon">💬</div>
+        <h3>Webchat</h3>
+        <p>Full dashboard experience. Streaming responses, file uploads, swarm view, terminal access.</p>
+      </div>
+      <div class="channel-card">
+        <div class="channel-icon">✈️</div>
+        <h3>Telegram</h3>
+        <p>Message your agents from Telegram. Full capability — launch Hands, check progress, get results.</p>
+      </div>
+      <div class="channel-card">
+        <div class="channel-icon">📱</div>
+        <h3>WhatsApp</h3>
+        <p>Your agents on WhatsApp. Same conversation, same context. Works on any phone.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing-section" id="pricing">
+  <div class="container" style="text-align: center;">
+    <div class="section-label">simple_pricing</div>
+    <h2 class="section-title">Pay for what you use. Nothing more.</h2>
+    <p class="section-desc" style="margin: 0 auto 0;">No subscriptions. No tiers. No surprises.</p>
+
+    <div class="pricing-card">
+      <div class="free-badge">🎁 Free credits on signup</div>
+      <div class="price">$0 <span>to start</span></div>
+      <div class="subtitle">1M tokens or $10 free — whichever is greater</div>
+      <ul class="pricing-features">
+        <li><span class="check">✓</span> All 8 agents included</li>
+        <li><span class="check">✓</span> Agent swarm access</li>
+        <li><span class="check">✓</span> Web terminal</li>
+        <li><span class="check">✓</span> Telegram + WhatsApp + Webchat</li>
+        <li><span class="check">✓</span> All AI models (GPT-4o, Claude, Gemini, etc.)</li>
+        <li><span class="check">✓</span> Vercel + Supabase deploy</li>
+        <li><span class="check">✓</span> Pay per token after free credits</li>
+      </ul>
+      <a href="#" class="btn btn-primary" style="width: 100%; justify-content: center;">Get Started Free →</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Stop prompting.<br>Start delegating.</h2>
+  <p>Your AI team is ready. Sign up in 30 seconds. Free credits. No credit card.</p>
+  <a href="#" class="btn btn-primary">Get Started Free →</a>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>© 2026 AgentSquads. Built with 🔥 and autonomous agents.</p>
+</footer>
+
+</body>
+</html>

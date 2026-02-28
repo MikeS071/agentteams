@@ -1,4 +1,4 @@
--- All tables for AgentTeams MVP
+-- All tables for AgentSquads MVP
 
 -- Users (NextAuth compatible)
 CREATE TABLE users (
