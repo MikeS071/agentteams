@@ -1,0 +1,84 @@
+
+> @agentsquads/web@0.1.0 test /home/openclaw/projects/agentteams-worktrees/test-web/apps/web
+> vitest run
+
+
+ RUN  v4.0.18 /home/openclaw/projects/agentteams-worktrees/test-web/apps/web
+
+ ✓ src/app/api/chat/history/route.test.ts (3 tests) 180ms
+ ✓ src/app/api/profile/route.test.ts (5 tests) 120ms
+ ✓ src/app/api/channels/telegram/route.test.ts (3 tests) 81ms
+ ✓ src/app/api/channels/whatsapp/route.test.ts (3 tests) 79ms
+ ✓ src/app/api/admin/tenants/[id]/suspend/route.test.ts (3 tests) 88ms
+ ✓ src/app/api/chat/route.test.ts (4 tests) 119ms
+stderr | src/app/api/webhooks/stripe/route.test.ts > api/webhooks/stripe > rejects invalid stripe signature
+Stripe webhook verification failed Error: bad signature
+    at Object.<anonymous> (/home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/webhooks/stripe/route.test.ts:12:13)
+    at Object.Mock [as constructEvent] (file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+spy@4.0.18/node_modules/@vitest/spy/dist/index.js:285:34)
+    at parseStripeEvent (/home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/webhooks/stripe/route.ts:32:26)
+    at POST (/home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/webhooks/stripe/route.ts:40:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/webhooks/stripe/route.test.ts:21:17
+    at file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+runner@4.0.18/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ src/app/api/webhooks/stripe/route.test.ts (3 tests) 84ms
+ ✓ src/app/api/deploy/tokens/route.test.ts (4 tests) 121ms
+ ✓ src/app/api/onboarding/route.test.ts (4 tests) 111ms
+ ✓ src/app/api/admin/tenants/[id]/credits/route.test.ts (3 tests) 92ms
+stderr | src/app/api/auth/signup/route.test.ts > api/auth/signup > handles db failure
+Signup failed: Error: boom
+    at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/auth/signup/route.test.ts:64:66
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+runner@4.0.18/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ src/app/api/auth/signup/route.test.ts (4 tests) 76ms
+ ✓ src/app/api/profile/password/route.test.ts (4 tests) 78ms
+ ✓ src/app/api/deploy/connections/route.test.ts (3 tests) 79ms
+ ✓ src/app/api/deploy/run/route.test.ts (4 tests) 127ms
+ ✓ src/app/api/admin/models/route.test.ts (4 tests) 119ms
+ ✓ src/app/api/billing/checkout/route.test.ts (4 tests) 143ms
+ ✓ src/app/api/hands/[id]/approve/[actionId]/route.test.ts (3 tests) 33ms
+stderr | src/app/api/billing/usage/route.test.ts > api/billing/usage > handles db errors
+Billing usage error: Error: db
+    at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/billing/usage/route.test.ts:43:39
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+runner@4.0.18/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ src/app/api/billing/usage/route.test.ts (3 tests) 37ms
+ ✓ src/app/api/hands/events/route.test.ts (3 tests) 31ms
+ ✓ src/app/api/channels/route.test.ts (3 tests) 32ms
+ ✓ src/app/api/swarm/tasks/route.test.ts (4 tests) 36ms
+stderr | src/app/api/usage/daily/route.test.ts > api/usage/daily > handles errors
+Daily usage error: Error: db
+    at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/usage/daily/route.test.ts:30:39
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+runner@4.0.18/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ src/app/api/usage/daily/route.test.ts (3 tests) 34ms
+stderr | src/app/api/hands/route.test.ts > api/hands > handles upstream failure
+hands GET error Error: boom
+    at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/hands/route.test.ts:30:50
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+runner@4.0.18/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ src/app/api/hands/route.test.ts (3 tests) 34ms
+stderr | src/app/api/billing/balance/route.test.ts > api/billing/balance > handles db error
+Billing balance error: Error: db
+    at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/billing/balance/route.test.ts:35:39
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+runner@4.0.18/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ src/app/api/billing/balance/route.test.ts (3 tests) 34ms
+ ✓ src/app/api/chat/conversations/route.test.ts (3 tests) 39ms
+ ✓ src/app/api/tenant/status/route.test.ts (3 tests) 30ms
+ ✓ src/app/api/hands/[id]/reject/[actionId]/route.test.ts (3 tests) 48ms
+ ✓ src/app/api/models/route.test.ts (2 tests) 36ms
+ ✓ src/app/api/admin/tenants/route.test.ts (3 tests) 71ms
+ ✓ src/app/api/admin/stats/route.test.ts (2 tests) 197ms
+ ✓ src/app/api/route.test.ts (1 test) 10ms
+
+ Test Files  31 passed (31)
+      Tests  100 passed (100)
+   Start at  11:49:27
+   Duration  38.15s (transform 1.08s, setup 3.03s, import 1.65s, tests 2.40s, environment 25.28s)
+
