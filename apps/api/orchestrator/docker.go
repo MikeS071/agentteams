@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -15,6 +16,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/go-connections/nat"
 )
 
 const (
@@ -113,6 +115,9 @@ func (o *DockerOrchestrator) Create(ctx context.Context, tenantID string) (*Cont
 	resp, err := o.cli.ContainerCreate(ctx,
 		&container.Config{
 			Image: tenantImage,
+			ExposedPorts: nat.PortSet{
+				nat.Port(fmt.Sprintf("%d/tcp", tenantPort)): {},
+			},
 			Env: []string{
 				"TENANT_ID=" + tenantID,
 				"PLATFORM_API_URL=" + o.platformAPIURL,
@@ -125,12 +130,18 @@ func (o *DockerOrchestrator) Create(ctx context.Context, tenantID string) (*Cont
 		},
 		&container.HostConfig{
 			Resources: container.Resources{
-				Memory:   memoryLimit,
-				CPUQuota: cpuQuota,
+				Memory:    memoryLimit,
+				CPUQuota:  cpuQuota,
 				CPUPeriod: cpuPeriod,
 			},
 			RestartPolicy: container.RestartPolicy{Name: "unless-stopped"},
 			NetworkMode:   container.NetworkMode(tenantNetwork),
+			PortBindings: nat.PortMap{
+				nat.Port(fmt.Sprintf("%d/tcp", tenantPort)): []nat.PortBinding{{
+					HostIP:   "127.0.0.1",
+					HostPort: "",
+				}},
+			},
 		},
 		nil, nil, name,
 	)
@@ -261,6 +272,35 @@ func (o *DockerOrchestrator) Status(ctx context.Context, tenantID string) (*Cont
 	}
 
 	return status, nil
+}
+
+// Port resolves the host port mapped to the tenant's OpenFang API.
+func (o *DockerOrchestrator) Port(ctx context.Context, tenantID string) (int, error) {
+	cid, err := o.getContainerID(ctx, tenantID)
+	if err != nil {
+		return 0, err
+	}
+
+	info, err := o.cli.ContainerInspect(ctx, cid)
+	if err != nil {
+		return 0, fmt.Errorf("inspect: %w", err)
+	}
+
+	containerPort := nat.Port(fmt.Sprintf("%d/tcp", tenantPort))
+	if bindings, ok := info.NetworkSettings.Ports[containerPort]; ok {
+		for _, binding := range bindings {
+			hostPort := binding.HostPort
+			if hostPort == "" {
+				continue
+			}
+			parsed, err := strconv.Atoi(hostPort)
+			if err == nil {
+				return parsed, nil
+			}
+		}
+	}
+
+	return tenantPort, nil
 }
 
 // Exec runs a command inside a tenant container and returns the output.

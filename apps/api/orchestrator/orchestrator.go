@@ -12,6 +12,7 @@ type TenantOrchestrator interface {
 	Stop(ctx context.Context, tenantID string) error
 	Delete(ctx context.Context, tenantID string) error
 	Status(ctx context.Context, tenantID string) (*ContainerStatus, error)
+	Port(ctx context.Context, tenantID string) (int, error)
 	Exec(ctx context.Context, tenantID string, cmd []string) (string, error)
 }
 
