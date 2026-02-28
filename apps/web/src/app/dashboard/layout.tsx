@@ -12,6 +12,7 @@ const navItems = [
 const settingsItems = [
   { href: "/dashboard/settings", label: "General" },
   { href: "/dashboard/settings/deploy", label: "Deploy" },
+  { href: "/dashboard/settings/channels", label: "Channels" },
 ];
 
 export default async function DashboardLayout({
