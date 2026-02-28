@@ -1,6 +1,10 @@
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import pool from "./db";
+
+const ALLOWED_EMAILS = new Set([
+  "michal.szalinski@gmail.com",
+]);
 import { getStripe } from "./stripe";
 
 async function findOrCreateTenant(
@@ -105,6 +109,9 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
+        if (!user.email || !ALLOWED_EMAILS.has(user.email)) {
+          return false;
+        }
       if (!user.email) return false;
 
       // Upsert user for OAuth providers
