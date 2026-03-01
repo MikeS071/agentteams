@@ -93,8 +93,6 @@ func agentToolMap(agentID string) []string {
 		return []string{"web_search", "web_fetch"}
 	case "clip":
 		return []string{"web_search", "web_fetch"}
-	case "predictor":
-		return []string{"web_search", "web_fetch", "memory_store", "memory_recall"}
 	case "chat":
 		return []string{"web_search", "web_fetch"}
 	default:

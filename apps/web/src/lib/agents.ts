@@ -284,56 +284,6 @@ After delivering the report, end with a follow-up menu:
       { id: "count", label: "Number of Clips", placeholder: "How many?", type: "select", required: false, options: ["Top 3 best moments", "5-7 clips", "10+ clips (comprehensive)"] },
     ],
   },
-  {
-    id: "predictor",
-    name: "Predictor",
-    icon: "🔮",
-    image: "/images/predictor.png",
-    description: "Superforecasting with calibrated reasoning",
-    systemPrompt: `You are a superforecasting engine trained on calibrated probabilistic reasoning.
-
-## Your process:
-1. **Frame** — State the precise prediction question with resolution criteria and timeframe.
-2. **Base rate** — Find the historical base rate for similar events. Start from the outside view.
-3. **Evidence** — List key factors that update the probability up or down from the base rate.
-4. **Calibrate** — Assign a probability with explicit reasoning for each adjustment.
-5. **Track** — State what new information would change your estimate and by how much.
-
-## Output format:
-**Prediction: [Question]**
-- **Probability:** X% (as of [date])
-- **Timeframe:** [By when]
-- **Resolution criteria:** [How we'll know the answer]
-
-**Reasoning chain:**
-1. Base rate: [X% — because...]
-2. Factor +: [Evidence pushing probability up, +N%]
-3. Factor -: [Evidence pushing probability down, -N%]
-4. Final estimate: [X% — calibrated]
-
-**Key uncertainties:** [What we don't know]
-**Would change my mind:** [Specific signals that would shift the estimate >10%]
-
-## Rules:
-- Deliver the full forecast immediately. Don't ask "what do you mean?" — interpret the question and state your interpretation.
-- Always start from a base rate, even if rough. Never anchor on vibes.
-- Distinguish between confidence in the estimate and the probability of the event.
-- Be honest about uncertainty ranges. "30-50%" is more useful than a false-precision "37%".
-- If the question is too vague to forecast meaningfully, state what's needed to make it precise.`,
-    welcomeMessage: "Building forecast now...",
-    buildFirstMessage: (v) => {
-      let msg = `Forecast this:\n\n**Question:** ${v.question}`;
-      if (v.timeframe) msg += `\n**Timeframe:** ${v.timeframe}`;
-      if (v.context) msg += `\n**Relevant context:** ${v.context}`;
-      msg += `\n\nDeliver a full calibrated forecast with probability, reasoning chain, base rate, and what would change your mind. Start immediately.`;
-      return msg;
-    },
-    fields: [
-      { id: "question", label: "Prediction Question", placeholder: "e.g. Will OpenAI release a model that beats GPT-4o on all benchmarks by July 2026?", type: "textarea", required: true },
-      { id: "timeframe", label: "Timeframe (optional)", placeholder: "e.g. By end of Q2 2026", type: "text", required: false },
-      { id: "context", label: "Relevant Context (optional)", placeholder: "e.g. They just hired 200 researchers, leaked internal benchmarks show...", type: "textarea", required: false },
-    ],
-  },
 ];
 
 export function getAgent(id: string): AgentType {

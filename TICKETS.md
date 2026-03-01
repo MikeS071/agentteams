@@ -288,10 +288,10 @@
 - User browses catalog, clicks Start on Research → guided flow begins
 - Freeform chat always accessible
 
-### P4-03: Starter workflow templates (8 templates)
+### P4-03: Starter workflow templates
 **Priority:** High | **Estimate:** 3h | **Depends on:** P4-01 | ⚡ parallel with P4-02
 **Brief:**
-- Author 8 TOML workflow templates as defined in SERVICE-SPEC.md:
+- Author TOML workflow templates as defined in SERVICE-SPEC.md:
   1. `research.toml` — topic, depth, format, sources, confirm
   2. `coder.toml` — description, stack, deploy target, confirm
   3. `leadgen.toml` — ICP, industry, frequency, output format, confirm
@@ -299,11 +299,10 @@
   5. `social.toml` — platform, tone, frequency, approval mode, confirm
   6. `browser.toml` — task description, target URL, approval gate, confirm
   7. `clip.toml` — video URL, style, length, output, confirm
-  8. `predictor.toml` — question, timeframe, contrarian mode, confidence threshold, confirm
 - Each template includes: cost estimate hints, default values, help text
 - Store in: `data/workflows/` directory in repo
 **Acceptance:**
-- All 8 templates parse without error
+- All templates parse without error
 - Each renders correctly in webchat and Telegram
 
 ---
