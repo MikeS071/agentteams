@@ -128,7 +128,162 @@ Include at the end:
 Lastly, ask me to approve to proceed to build.`,
     },
   ],
-  social: [],
+  social: [
+    {
+      id: "article",
+      label: "Article",
+      icon: "📝",
+      fields: [
+        {
+          id: "title",
+          label: "Title / Topic",
+          placeholder: "e.g. Why agent swarms are the future of solo development",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "description",
+          label: "Description / Angle",
+          placeholder: "What's the key insight or angle?",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "audience",
+          label: "Target Audience",
+          placeholder: "e.g. Technical founders, AI engineers",
+          type: "text",
+          required: false,
+        },
+        {
+          id: "tone",
+          label: "Tone",
+          placeholder: "Style?",
+          type: "select",
+          required: false,
+          options: ["Technical deep-dive", "Narrative / storytelling", "Tutorial / how-to", "Opinion / thought leadership"],
+        },
+      ],
+      promptTemplate: `Use ContentAI to create a new article.
+
+Topic: {{title}}
+Angle: {{description}}
+{{#audience}}Audience: {{audience}}{{/audience}}
+{{#tone}}Tone: {{tone}}{{/tone}}
+
+Start the ContentAI pipeline: idea → outline → draft → QA. Present the draft for my approval before publishing.`,
+    },
+    {
+      id: "social-post",
+      label: "Social Post",
+      icon: "📣",
+      fields: [
+        {
+          id: "platform",
+          label: "Platform",
+          type: "select",
+          required: true,
+          options: ["X / Twitter", "LinkedIn", "Both"],
+          placeholder: "",
+        },
+        {
+          id: "topic",
+          label: "Topic / Message",
+          placeholder: "What do you want to post about?",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "link",
+          label: "Link to include (optional)",
+          placeholder: "https://...",
+          type: "text",
+          required: false,
+        },
+      ],
+      promptTemplate: `Use ContentAI to draft a social post.
+
+Platform: {{platform}}
+Topic: {{topic}}
+{{#link}}Link: {{link}}{{/link}}
+
+Draft the post, show me for approval. Do not post without my explicit approval.`,
+    },
+    {
+      id: "reel",
+      label: "Reel",
+      icon: "🎬",
+      fields: [
+        {
+          id: "topic",
+          label: "Topic",
+          placeholder: "What's the reel about?",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "duration",
+          label: "Duration",
+          type: "select",
+          required: false,
+          options: ["15 seconds", "30 seconds", "60 seconds", "90 seconds"],
+          placeholder: "",
+        },
+        {
+          id: "style",
+          label: "Style",
+          type: "select",
+          required: false,
+          options: ["Talking head + captions", "Screen recording + voiceover", "Slideshow + music", "Mixed"],
+          placeholder: "",
+        },
+      ],
+      promptTemplate: `Plan a short-form video reel.
+
+Topic: {{topic}}
+{{#duration}}Duration: {{duration}}{{/duration}}
+{{#style}}Style: {{style}}{{/style}}
+
+Create a script with scenes, captions, and timing. Present for my review.`,
+    },
+    {
+      id: "carousel",
+      label: "Carousel",
+      icon: "🎠",
+      fields: [
+        {
+          id: "topic",
+          label: "Topic",
+          placeholder: "What's the carousel about?",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "slides",
+          label: "Number of slides",
+          type: "select",
+          required: false,
+          options: ["5 slides", "7 slides", "10 slides"],
+          placeholder: "",
+        },
+        {
+          id: "platform",
+          label: "Platform",
+          type: "select",
+          required: true,
+          options: ["LinkedIn", "Instagram", "Both"],
+          placeholder: "",
+        },
+      ],
+      promptTemplate: `Create a carousel post.
+
+Topic: {{topic}}
+Platform: {{platform}}
+{{#slides}}Slides: {{slides}}{{/slides}}
+
+Write the text for each slide with a hook on slide 1 and CTA on the last slide. Present for my review.`,
+    },
+  ],
   clip: [],
   intel: [],
   chat: [],
