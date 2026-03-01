@@ -217,91 +217,108 @@
       "startedAt": "2026-03-01T09:02:30Z"
     },
     "as-20": {
-      "status": "running",
+      "status": "done",
       "phase": 5,
       "depends": [],
       "branch": "feat/as-20",
       "desc": "Widen sidebar from w-16 to w-20 with visible text labels",
+      "sha": "d94e009",
       "startedAt": "2026-03-01T10:02:33Z"
     },
     "as-21": {
-      "status": "running",
+      "status": "done",
       "phase": 5,
       "depends": [],
       "branch": "feat/as-21",
       "desc": "Move Configure + New Chat buttons to chat header bar",
+      "sha": "72bc1b6",
       "startedAt": "2026-03-01T10:02:33Z"
     },
     "as-22": {
-      "status": "running",
+      "status": "done",
       "phase": 5,
       "depends": [],
       "branch": "feat/as-22",
       "desc": "Move model dropdown to chat header, remove from top navbar",
+      "sha": "17c48b1",
       "startedAt": "2026-03-01T10:02:34Z"
     },
     "as-23": {
-      "status": "todo",
+      "status": "done",
       "phase": 5,
       "depends": [],
       "branch": "feat/as-23",
-      "desc": "Remove model label from chat bottom bar"
+      "desc": "Remove model label from chat bottom bar",
+      "sha": "eed89bb",
+      "startedAt": "2026-03-01T10:04:17Z"
     },
     "as-24": {
-      "status": "todo",
+      "status": "done",
       "phase": 5,
       "depends": [],
       "branch": "feat/as-24",
-      "desc": "Fix model names to real provider versions (anthropic/claude-opus-4-6 etc)"
+      "desc": "Fix model names to real provider versions (anthropic/claude-opus-4-6 etc)",
+      "sha": "9a049c1",
+      "startedAt": "2026-03-01T10:08:21Z"
     },
     "as-25": {
-      "status": "todo",
+      "status": "done",
       "phase": 6,
       "depends": [
         "as-21",
         "as-22"
       ],
       "branch": "feat/as-25",
-      "desc": "Quick Action button framework + modal system"
+      "desc": "Quick Action button framework + modal system",
+      "sha": "823ebce",
+      "startedAt": "2026-03-01T10:16:23Z"
     },
     "as-26": {
-      "status": "todo",
+      "status": "done",
       "phase": 6,
       "depends": [
         "as-25"
       ],
       "branch": "feat/as-26",
-      "desc": "Research Assistant quick action — Start New Research modal"
+      "desc": "Research Assistant quick action — Start New Research modal",
+      "sha": "e71b2a2",
+      "startedAt": "2026-03-01T10:21:24Z"
     },
     "as-27": {
-      "status": "todo",
+      "status": "done",
       "phase": 6,
       "depends": [
         "as-25"
       ],
       "branch": "feat/as-27",
-      "desc": "Coder quick actions — Project + Web Page modals with swarm prompt"
+      "desc": "Coder quick actions — Project + Web Page modals with swarm prompt",
+      "sha": "fb3594a",
+      "startedAt": "2026-03-01T10:25:55Z"
     },
     "as-28": {
-      "status": "todo",
+      "status": "done",
       "phase": 6,
       "depends": [
         "as-25"
       ],
       "branch": "feat/as-28",
-      "desc": "Social Manager quick actions — Article, Social Post, Reel, Carousel"
+      "desc": "Social Manager quick actions — Article, Social Post, Reel, Carousel",
+      "sha": "b0697c1",
+      "startedAt": "2026-03-01T10:29:26Z"
     },
     "as-29": {
-      "status": "todo",
+      "status": "done",
       "phase": 6,
       "depends": [
         "as-25"
       ],
       "branch": "feat/as-29",
-      "desc": "Clip Creator quick action — Youtube Clip modal"
+      "desc": "Clip Creator quick action — Youtube Clip modal",
+      "sha": "3eb6f8c",
+      "startedAt": "2026-03-01T10:32:56Z"
     },
     "as-30": {
-      "status": "todo",
+      "status": "done",
       "phase": 7,
       "depends": [
         "as-20",
@@ -315,17 +332,21 @@
         "as-29"
       ],
       "branch": "feat/as-30",
-      "desc": "Integration merge + build verification"
+      "desc": "Integration merge + build verification",
+      "sha": "5103267",
+      "startedAt": "2026-03-01T10:37:57Z"
     },
     "as-31": {
-      "status": "todo",
+      "status": "done",
       "phase": 7,
       "depends": [
         "as-30"
       ],
       "branch": "feat/as-31",
-      "desc": "E2E tests for quick actions + UI tweaks"
+      "desc": "E2E tests for quick actions + UI tweaks",
+      "sha": "7518635",
+      "startedAt": "2026-03-01T10:45:58Z"
     }
   },
-  "unlocked_phase": 5
+  "unlocked_phase": 7
 }
