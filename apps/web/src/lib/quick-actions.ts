@@ -1,0 +1,135 @@
+export type QuickActionField = {
+  id: string;
+  label: string;
+  placeholder: string;
+  type: "text" | "textarea" | "select";
+  required: boolean;
+  options?: string[];
+};
+
+export type QuickAction = {
+  id: string;
+  label: string;
+  icon?: string;
+  fields: QuickActionField[];
+  promptTemplate: string;
+};
+
+export const QUICK_ACTIONS: Record<string, QuickAction[]> = {
+  research: [],
+  coder: [
+    {
+      id: "new-project",
+      label: "Project",
+      icon: "📦",
+      fields: [
+        {
+          id: "project_name",
+          label: "Project Name",
+          placeholder: "e.g. my-api-service",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "project_type",
+          label: "Type",
+          placeholder: "What kind?",
+          type: "select",
+          required: true,
+          options: ["SKILL", "FEATURE", "WEBAPP", "LANDING_PAGE", "CLI_TOOL", "API_SERVICE", "LIBRARY"],
+        },
+        {
+          id: "goal",
+          label: "Goal",
+          placeholder: "e.g. Build a REST API for user management",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "description",
+          label: "Description",
+          placeholder: "Detailed description of what you want built",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "requirements",
+          label: "Requirements",
+          placeholder: "e.g. Must support JWT auth, PostgreSQL, rate limiting",
+          type: "textarea",
+          required: false,
+        },
+      ],
+      promptTemplate: `Spec out a new project {{project_name}} which we'll build using agent-swarm. This is a new {{project_type}}.
+Requirements are:
+GOAL: {{goal}}
+DESCRIPTION: {{description}}
+REQUIREMENTS: {{requirements}}
+INSTRUCTIONS:
+Create a new project directory, create the spec, ask me any clarifying questions one-by-one to improve the spec and remove ambiguous areas. Be detailed and present examples for me to decide on design options or direction.
+Once a spec is done, ask me to approve to proceed to create a detailed execution plan, and then break this down into small 5-10min tickets that can be built by the swarm agents. Register the project/tickets into the swarm project/register.
+Ensure each ticket/agent follow TDD principles (create failing tests matching functional specs, then build, then test, then break-fix). Include a ticket to, once all tickets are built, to merge all branches before a final audit and integration tests are run.
+{{#project_type_is_skill}}For SKILL projects: use go cli as implementation. Include SKILL.MD and splice appropriate instructions into MEMORY.md, TOOLS.md and AGENTS.md so they can be appended to a new OpenClaw instance environment.{{/project_type_is_skill}}
+Include at the end:
+- Merge of all the worktrees/branches and resolve conflicts
+- Execute End to end comprehensive integration and functional test suite
+- Update all relevant user and technical doco
+
+Lastly, ask me to approve to proceed to build.`,
+    },
+    {
+      id: "new-webpage",
+      label: "Web Page",
+      icon: "🌐",
+      fields: [
+        {
+          id: "page_name",
+          label: "Page Name",
+          placeholder: "e.g. pricing-page",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "goal",
+          label: "Goal",
+          placeholder: "e.g. A pricing page with 3 tiers and Stripe checkout",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "description",
+          label: "Description",
+          placeholder: "Layout, sections, style preferences",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "requirements",
+          label: "Requirements",
+          placeholder: "e.g. Responsive, dark theme, animations",
+          type: "textarea",
+          required: false,
+        },
+      ],
+      promptTemplate: `Spec out a new project {{page_name}} which we'll build using agent-swarm. This is a new LANDING_PAGE.
+Requirements are:
+GOAL: {{goal}}
+DESCRIPTION: {{description}}
+REQUIREMENTS: {{requirements}}
+INSTRUCTIONS:
+Create a new project directory, create the spec, ask me any clarifying questions one-by-one to improve the spec and remove ambiguous areas. Be detailed and present examples for me to decide on design options or direction.
+Once a spec is done, ask me to approve to proceed to create a detailed execution plan, and then break this down into small 5-10min tickets that can be built by the swarm agents. Register the project/tickets into the swarm project/register.
+Ensure each ticket/agent follow TDD principles (create failing tests matching functional specs, then build, then test, then break-fix).
+Include at the end:
+- Merge of all the worktrees/branches and resolve conflicts
+- Execute End to end comprehensive integration and functional test suite
+- Update all relevant user and technical doco
+
+Lastly, ask me to approve to proceed to build.`,
+    },
+  ],
+  social: [],
+  clip: [],
+  intel: [],
+  chat: [],
+};
