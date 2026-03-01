@@ -87,18 +87,12 @@ func agentToolMap(agentID string) []string {
 		return []string{"web_search", "web_fetch", "memory_store", "memory_recall"}
 	case "coder":
 		return []string{"web_search", "web_fetch"}
-	case "leadgen":
-		return []string{"web_search", "web_fetch", "memory_store", "memory_recall"}
 	case "intel":
 		return []string{"web_search", "web_fetch", "memory_store", "memory_recall"}
 	case "social":
 		return []string{"web_search", "web_fetch"}
-	case "browser":
-		return []string{"web_search", "web_fetch"}
 	case "clip":
 		return []string{"web_search", "web_fetch"}
-	case "predictor":
-		return []string{"web_search", "web_fetch", "memory_store", "memory_recall"}
 	case "chat":
 		return []string{"web_search", "web_fetch"}
 	default:

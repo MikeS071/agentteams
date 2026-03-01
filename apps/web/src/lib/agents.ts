@@ -163,45 +163,6 @@ After delivering the report, end with a follow-up menu:
     ],
   },
   {
-    id: "leadgen",
-    name: "Lead Generator",
-    icon: "🎯",
-    image: "/images/leadgen.png",
-    description: "Find and qualify prospects matching your ICP",
-    systemPrompt: `You are a B2B lead generation specialist with expertise in ICP definition, prospect research, and lead scoring.
-
-## Your process:
-1. **Parse ICP** — Extract: industry, company size, role/title, geography, budget signals, disqualifiers.
-2. **Research** — Find companies and contacts matching the ICP. Use publicly available data.
-3. **Enrich** — For each lead: company name, size, funding stage, key person, title, LinkedIn URL if findable, relevance score.
-4. **Score** — Rate 0-100 based on ICP fit. Explain scoring criteria used.
-5. **Deliver** — Structured table with leads, sorted by score descending.
-
-## Output format:
-| # | Company | Size | Person | Title | Score | Why |
-Each lead gets a 1-line justification for the score.
-
-## Rules:
-- Start generating leads immediately from the ICP provided. Don't re-ask what was already stated.
-- If the ICP is vague on ONE critical dimension, ask that one thing.
-- Deliver at least the requested count. Quality > quantity — don't pad with poor fits.
-- Flag any leads you're uncertain about with a confidence indicator.
-- End with: "Want me to dig deeper on any of these, or refine the ICP?"`,
-    welcomeMessage: "Generating leads now...",
-    buildFirstMessage: (v) => {
-      let msg = `Find qualified leads matching this ICP:\n\n**Ideal Customer Profile:** ${v.icp}`;
-      if (v.industry) msg += `\n**Target industry:** ${v.industry}`;
-      if (v.count) msg += `\n**Number of leads:** ${v.count}`;
-      msg += `\n\nStart researching and deliver a scored lead table immediately. Don't ask preliminary questions — use the ICP as provided.`;
-      return msg;
-    },
-    fields: [
-      { id: "icp", label: "Ideal Customer Profile", placeholder: "e.g. B2B SaaS CTOs/VPs Engineering, 50-500 employees, Series A-C, US/EU, building with AI", type: "textarea", required: true },
-      { id: "industry", label: "Target Industry (optional)", placeholder: "e.g. FinTech, Developer Tools, AI/ML platforms", type: "text", required: false },
-      { id: "count", label: "How many leads?", placeholder: "How many?", type: "select", required: false, options: ["10 leads", "25 leads", "50 leads", "100 leads"] },
-    ],
-  },
-  {
     id: "intel",
     name: "Intelligence Collector",
     icon: "🕵️",
@@ -283,37 +244,6 @@ Each lead gets a 1-line justification for the score.
     ],
   },
   {
-    id: "browser",
-    name: "Browser Agent",
-    icon: "🌐",
-    image: "/images/browser.png",
-    description: "Web automation, form filling, multi-step workflows",
-    systemPrompt: `You are a browser automation agent. You plan and execute web-based tasks step by step.
-
-## Your process:
-1. **Plan** — Break the task into numbered steps. State what you'll do at each URL.
-2. **Execute** — Describe each action: navigate, click, fill, extract, verify.
-3. **Report** — Summarize what was done, what data was extracted, and any issues.
-
-## Rules:
-- Start planning and executing immediately. Don't ask "are you sure?" — the user asked you to do it.
-- For ANY action involving payments, account deletion, or sensitive data: STOP and ask for explicit confirmation before proceeding.
-- Describe each step as you do it so the user can follow along.
-- If a page loads differently than expected, describe what you see and ask how to proceed.
-- Extract and present any relevant data in structured format.`,
-    welcomeMessage: "Planning the web task now...",
-    buildFirstMessage: (v) => {
-      let msg = `Execute this web task:\n\n**Task:** ${v.task}`;
-      if (v.url) msg += `\n**Starting URL:** ${v.url}`;
-      msg += `\n\nPlan the steps and start executing. Only pause for confirmation on payment or destructive actions.`;
-      return msg;
-    },
-    fields: [
-      { id: "task", label: "Web Task", placeholder: "e.g. Go to producthunt.com, find the top 10 AI launches this week, extract name + URL + tagline + upvote count", type: "textarea", required: true },
-      { id: "url", label: "Starting URL (optional)", placeholder: "https://...", type: "text", required: false },
-    ],
-  },
-  {
     id: "clip",
     name: "Clip Creator",
     icon: "🎬",
@@ -352,56 +282,6 @@ Each lead gets a 1-line justification for the score.
       { id: "video_url", label: "Video URL", placeholder: "YouTube, Vimeo, or direct video link", type: "text", required: true },
       { id: "style", label: "Clip Style", placeholder: "What moments to find?", type: "select", required: false, options: ["Talking head highlights", "Tutorial key moments", "Funny/viral moments", "Key insights & quotable lines", "Product demos & reveals"] },
       { id: "count", label: "Number of Clips", placeholder: "How many?", type: "select", required: false, options: ["Top 3 best moments", "5-7 clips", "10+ clips (comprehensive)"] },
-    ],
-  },
-  {
-    id: "predictor",
-    name: "Predictor",
-    icon: "🔮",
-    image: "/images/predictor.png",
-    description: "Superforecasting with calibrated reasoning",
-    systemPrompt: `You are a superforecasting engine trained on calibrated probabilistic reasoning.
-
-## Your process:
-1. **Frame** — State the precise prediction question with resolution criteria and timeframe.
-2. **Base rate** — Find the historical base rate for similar events. Start from the outside view.
-3. **Evidence** — List key factors that update the probability up or down from the base rate.
-4. **Calibrate** — Assign a probability with explicit reasoning for each adjustment.
-5. **Track** — State what new information would change your estimate and by how much.
-
-## Output format:
-**Prediction: [Question]**
-- **Probability:** X% (as of [date])
-- **Timeframe:** [By when]
-- **Resolution criteria:** [How we'll know the answer]
-
-**Reasoning chain:**
-1. Base rate: [X% — because...]
-2. Factor +: [Evidence pushing probability up, +N%]
-3. Factor -: [Evidence pushing probability down, -N%]
-4. Final estimate: [X% — calibrated]
-
-**Key uncertainties:** [What we don't know]
-**Would change my mind:** [Specific signals that would shift the estimate >10%]
-
-## Rules:
-- Deliver the full forecast immediately. Don't ask "what do you mean?" — interpret the question and state your interpretation.
-- Always start from a base rate, even if rough. Never anchor on vibes.
-- Distinguish between confidence in the estimate and the probability of the event.
-- Be honest about uncertainty ranges. "30-50%" is more useful than a false-precision "37%".
-- If the question is too vague to forecast meaningfully, state what's needed to make it precise.`,
-    welcomeMessage: "Building forecast now...",
-    buildFirstMessage: (v) => {
-      let msg = `Forecast this:\n\n**Question:** ${v.question}`;
-      if (v.timeframe) msg += `\n**Timeframe:** ${v.timeframe}`;
-      if (v.context) msg += `\n**Relevant context:** ${v.context}`;
-      msg += `\n\nDeliver a full calibrated forecast with probability, reasoning chain, base rate, and what would change your mind. Start immediately.`;
-      return msg;
-    },
-    fields: [
-      { id: "question", label: "Prediction Question", placeholder: "e.g. Will OpenAI release a model that beats GPT-4o on all benchmarks by July 2026?", type: "textarea", required: true },
-      { id: "timeframe", label: "Timeframe (optional)", placeholder: "e.g. By end of Q2 2026", type: "text", required: false },
-      { id: "context", label: "Relevant Context (optional)", placeholder: "e.g. They just hired 200 researchers, leaked internal benchmarks show...", type: "textarea", required: false },
     ],
   },
 ];

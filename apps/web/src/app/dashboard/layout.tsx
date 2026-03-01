@@ -3,52 +3,34 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import DashboardUserMenu from "@/components/DashboardUserMenu";
-import ApprovalsBadge from "@/components/ApprovalsBadge";
+import DashboardMobileSidebar from "@/components/DashboardMobileSidebar";
+import DashboardSidebarNav, { type SidebarIcon, type SidebarItem } from "@/components/DashboardSidebarNav";
+import DashboardSidebarUserMenu from "@/components/DashboardSidebarUserMenu";
 import { getTenantFeatureMap } from "@/lib/feature-policies";
 import { type Feature } from "@/lib/features";
 
 type NavItem = {
   href: string;
   label: string;
+  icon: SidebarIcon;
   feature?: Feature;
 };
 
 const navItems: NavItem[] = [
-  { href: "/dashboard/chat", label: "Chat", feature: "webchat" },
-  { href: "/dashboard/channels", label: "Channels" },
-  { href: "/dashboard/hands", label: "Hands" },
-  { href: "/dashboard/agents", label: "Agents" },
-  { href: "/dashboard/approvals", label: "Approvals" },
-  { href: "/dashboard/swarm", label: "Swarm" },
-  { href: "/dashboard/usage", label: "Usage" },
-  { href: "/dashboard/billing", label: "Billing" },
+  { href: "/dashboard/chat", label: "Chat", icon: "message-square", feature: "webchat" },
+  { href: "/dashboard/channels", label: "Channels", icon: "radio" },
+  { href: "/dashboard/agents", label: "Agents", icon: "users" },
+  { href: "/dashboard/approvals", label: "Approvals", icon: "check-circle" },
+  { href: "/dashboard/swarm", label: "Swarm", icon: "network" },
+  { href: "/dashboard/usage", label: "Usage", icon: "bar-chart-3" },
+  { href: "/dashboard/billing", label: "Billing", icon: "credit-card" },
 ];
 
 const settingsItems: NavItem[] = [
-  { href: "/dashboard/profile", label: "Profile" },
-  { href: "/dashboard/settings", label: "General" },
-  { href: "/dashboard/settings/deploy", label: "Deploy", feature: "deploy" },
+  { href: "/dashboard/profile", label: "Profile", icon: "user" },
+  { href: "/dashboard/settings", label: "Settings", icon: "settings" },
+  { href: "/dashboard/settings/deploy", label: "Deploy", icon: "rocket", feature: "deploy" },
 ];
-
-function LockIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <rect x="5" y="11" width="14" height="10" rx="2" />
-      <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-    </svg>
-  );
-}
-
-function isNavItemEnabled(item: NavItem, featureMap: Record<Feature, boolean>) {
-  return item.feature ? featureMap[item.feature] : true;
-}
 
 export default async function DashboardLayout({
   children,
@@ -62,84 +44,51 @@ export default async function DashboardLayout({
   }
 
   const featureMap = await getTenantFeatureMap(session.user.tenantId);
+  const navItemsWithIcons = navItems as SidebarItem[];
+  const settingsItemsWithIcons = settingsItems as SidebarItem[];
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-gray-100">
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-[#1d1d2c] bg-[#0d0d14] md:flex">
-        <div className="border-b border-[#1d1d2c] px-5 py-4 text-lg font-semibold text-[#a29bfe]">AgentSquads</div>
-        <nav className="flex flex-col gap-1 p-3">
-          <p className="px-3 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Workspace</p>
-          {navItems.map((item) => (
-            isNavItemEnabled(item, featureMap) ? (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-gray-400 hover:bg-[#131320] hover:text-gray-200"
-              >
-                <span>{item.label}</span>
-                {item.href === "/dashboard/approvals" ? <ApprovalsBadge /> : null}
-              </Link>
-            ) : (
-              <span
-                key={item.href}
-                className="flex cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-500"
-              >
-                {item.label}
-                <LockIcon />
-              </span>
-            )
-          ))}
-          <p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Settings</p>
-          {settingsItems.map((item) => (
-            isNavItemEnabled(item, featureMap) ? (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:bg-[#131320] hover:text-gray-200"
-              >
-                {item.label}
-              </Link>
-            ) : (
-              <span
-                key={item.href}
-                className="flex cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-500"
-              >
-                {item.label}
-                <LockIcon />
-              </span>
-            )
-          ))}
-        </nav>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-[#1d1d2c] bg-[#0d0d14] px-4 sm:px-6">
-          <div className="md:hidden">
-            <nav className="flex gap-3 text-sm">
-              {[...navItems, ...settingsItems].map((item) => (
-                isNavItemEnabled(item, featureMap) ? (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="inline-flex items-center gap-1 text-gray-400"
-                  >
-                    <span>{item.label}</span>
-                  </Link>
-                ) : (
-                  <span key={item.href} className="inline-flex items-center gap-1 text-gray-500">
-                    {item.label}
-                    <LockIcon />
-                  </span>
-                )
-              ))}
-            </nav>
-          </div>
-          <p className="hidden text-sm text-gray-400 md:block">Dashboard</p>
-          <DashboardUserMenu
+      <aside className="hidden w-16 shrink-0 flex-col border-r border-[#1d1d2c] bg-[#0d0d14] md:flex">
+        <div className="flex h-16 items-center justify-center border-b border-[#1d1d2c]">
+          <Link
+            href="/dashboard/chat"
+            title="AgentSquads"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-xl"
+          >
+            🤖
+          </Link>
+        </div>
+        <DashboardSidebarNav
+          navItems={navItemsWithIcons}
+          settingsItems={settingsItemsWithIcons}
+          featureMap={featureMap}
+          className="flex-1 overflow-y-auto py-3"
+        />
+        <div className="flex justify-center border-t border-[#1d1d2c] p-3">
+          <DashboardSidebarUserMenu
             name={session.user.name}
             email={session.user.email}
             image={session.user.image}
           />
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-16 items-center justify-between border-b border-[#1d1d2c] bg-[#0d0d14] px-4 sm:px-6">
+          <DashboardMobileSidebar
+            navItems={navItemsWithIcons}
+            settingsItems={settingsItemsWithIcons}
+            featureMap={featureMap}
+          />
+          <p className="hidden text-sm text-gray-400 md:block">Dashboard</p>
+          <div className="md:hidden">
+            <DashboardUserMenu
+              name={session.user.name}
+              email={session.user.email}
+              image={session.user.image}
+            />
+          </div>
         </header>
         <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
       </div>
