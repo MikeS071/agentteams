@@ -5,127 +5,112 @@ import type { QuickAction } from "@/lib/quick-actions";
 
 type Props = {
   action: QuickAction | null;
-  onClose: () => void;
+  open: boolean;
   onSubmit: (prompt: string) => void;
+  onClose: () => void;
 };
 
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function renderPrompt(template: string, values: Record<string, string>): string {
+  const normalized: Record<string, string> = {};
+  Object.entries(values).forEach(([key, value]) => {
+    normalized[key] = value.trim();
+  });
+
+  let prompt = template.replace(/{{#(\w+)}}([\s\S]*?){{\/\1}}/g, (_, fieldId: string, content: string) => {
+    const value = normalized[fieldId];
+    if (!value) {
+      return "";
+    }
+    return content.replace(new RegExp(`{{${fieldId}}}`, "g"), value);
+  });
+
+  prompt = prompt.replace(/{{(\w+)}}/g, (_, fieldId: string) => normalized[fieldId] ?? "");
+  return prompt.replace(/\n{3,}/g, "\n\n").trim();
 }
 
-export default function QuickActionModal({ action, onClose, onSubmit }: Props) {
+export default function QuickActionModal({ action, open, onSubmit, onClose }: Props) {
   const [values, setValues] = useState<Record<string, string>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!action) {
-      setValues({});
-      setErrors({});
+    if (!action || !open) {
       return;
     }
-
-    const initialValues: Record<string, string> = {};
-    for (const field of action.fields) {
-      initialValues[field.id] = "";
-    }
+    const initialValues = action.fields.reduce<Record<string, string>>((acc, field) => {
+      acc[field.id] = "";
+      return acc;
+    }, {});
     setValues(initialValues);
-    setErrors({});
-  }, [action]);
+  }, [action, open]);
 
-  useEffect(() => {
+  const hasMissingRequired = useMemo(() => {
     if (!action) {
-      return;
+      return true;
     }
+    return action.fields.some((field) => field.required && !values[field.id]?.trim());
+  }, [action, values]);
 
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [action, onClose]);
-
-  const title = useMemo(() => action?.label ?? "", [action]);
-
-  if (!action) {
+  if (!action || !open) {
     return null;
   }
+  const selectedAction = action;
 
-  function handleStart() {
-    if (!action) {
-      return;
-    }
-
-    const nextErrors: Record<string, string> = {};
-
-    for (const field of action.fields) {
-      const value = values[field.id]?.trim() ?? "";
-      if (field.required && !value) {
-        nextErrors[field.id] = `${field.label} is required`;
-      }
-    }
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    let prompt = action.promptTemplate;
-    for (const field of action.fields) {
-      const token = new RegExp(`{{\\s*${escapeRegExp(field.id)}\\s*}}`, "g");
-      prompt = prompt.replace(token, values[field.id]?.trim() ?? "");
-    }
-
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const prompt = renderPrompt(selectedAction.promptTemplate, values);
     onSubmit(prompt);
     onClose();
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <button
-        type="button"
-        aria-label="Close quick action modal"
-        className="absolute inset-0 cursor-default"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-lg rounded-2xl border border-[#24242c] bg-[#14141a] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#24242c] px-4 py-3">
+          <h2 className="text-base font-semibold text-gray-100">
+            {selectedAction.icon ? `${selectedAction.icon} ` : ""}
+            {selectedAction.label}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-[#2d2d36] px-2.5 py-1 text-xs text-gray-300 hover:bg-[#1a1a22]"
+          >
+            Cancel
+          </button>
+        </div>
 
-      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-[#24242c] bg-[#14141a] p-5 shadow-2xl">
-        <h2 className="text-lg font-semibold text-gray-100">{action.label}</h2>
-
-        <div className="mt-4 space-y-4">
-          {action.fields.map((field) => (
-            <label key={field.id} className="block space-y-1.5">
-              <span className="text-sm text-gray-200">
+        <form onSubmit={handleSubmit} className="space-y-4 p-4">
+          {selectedAction.fields.map((field) => (
+            <div key={field.id} className="space-y-1">
+              <label className="block text-sm font-medium text-gray-200">
                 {field.label}
                 {field.required ? " *" : ""}
-              </span>
-
+              </label>
               {field.type === "textarea" ? (
                 <textarea
                   value={values[field.id] ?? ""}
-                  onChange={(event) => {
-                    const nextValue = event.target.value;
-                    setValues((prev) => ({ ...prev, [field.id]: nextValue }));
-                    setErrors((prev) => ({ ...prev, [field.id]: "" }));
-                  }}
                   placeholder={field.placeholder}
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      [field.id]: event.target.value,
+                    }))
+                  }
                   rows={4}
-                  className="w-full rounded-lg border border-[#2b2b36] bg-[#0f1016] px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-[#3a3a44] focus:outline-none"
+                  className="w-full rounded-lg border border-[#2b2b35] bg-[#101017] px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-[#3a3a44] focus:outline-none"
                 />
               ) : field.type === "select" ? (
                 <select
                   value={values[field.id] ?? ""}
-                  onChange={(event) => {
-                    const nextValue = event.target.value;
-                    setValues((prev) => ({ ...prev, [field.id]: nextValue }));
-                    setErrors((prev) => ({ ...prev, [field.id]: "" }));
-                  }}
-                  className="w-full rounded-lg border border-[#2b2b36] bg-[#0f1016] px-3 py-2 text-sm text-gray-100 focus:border-[#3a3a44] focus:outline-none"
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      [field.id]: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-[#2b2b35] bg-[#101017] px-3 py-2 text-sm text-gray-100 focus:border-[#3a3a44] focus:outline-none"
                 >
                   <option value="">{field.placeholder}</option>
-                  {(field.options ?? []).map((option) => (
+                  {field.options?.map((option) => (
                     <option key={option} value={option}>
                       {option}
                     </option>
@@ -135,37 +120,36 @@ export default function QuickActionModal({ action, onClose, onSubmit }: Props) {
                 <input
                   type="text"
                   value={values[field.id] ?? ""}
-                  onChange={(event) => {
-                    const nextValue = event.target.value;
-                    setValues((prev) => ({ ...prev, [field.id]: nextValue }));
-                    setErrors((prev) => ({ ...prev, [field.id]: "" }));
-                  }}
                   placeholder={field.placeholder}
-                  className="w-full rounded-lg border border-[#2b2b36] bg-[#0f1016] px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-[#3a3a44] focus:outline-none"
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      [field.id]: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-[#2b2b35] bg-[#101017] px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-[#3a3a44] focus:outline-none"
                 />
               )}
-
-              {errors[field.id] ? <p className="text-xs text-red-400">{errors[field.id]}</p> : null}
-            </label>
+            </div>
           ))}
-        </div>
 
-        <div className="mt-5 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-[#2b2b36] px-3 py-1.5 text-sm text-gray-300 hover:border-[#3a3a44] hover:bg-[#131320]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleStart}
-            className="rounded-lg border border-[#24402f] bg-[#123423] px-3 py-1.5 text-sm text-[#c8ffe2] hover:bg-[#17462f]"
-          >
-            Start
-          </button>
-        </div>
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-[#2d2d37] px-3 py-1.5 text-sm text-gray-300 hover:bg-[#1a1a22]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={hasMissingRequired}
+              className="rounded-lg border border-[#24242c] bg-[#1f8f5f] px-3 py-1.5 text-sm text-white hover:bg-[#17784f] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Start
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
