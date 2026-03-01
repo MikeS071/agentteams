@@ -78,7 +78,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-gray-100">
-      <aside className="hidden w-16 shrink-0 flex-col border-r border-[#1d1d2c] bg-[#0d0d14] md:flex">
+      <aside className="hidden w-20 shrink-0 flex-col border-r border-[#1d1d2c] bg-[#0d0d14] md:flex">
         <div className="flex h-16 items-center justify-center border-b border-[#1d1d2c]">
           <Link
             href="/dashboard/chat"
