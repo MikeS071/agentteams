@@ -28,7 +28,8 @@
       "depends": [
         "as-01",
         "as-02",
-        "as-03"
+        "as-03",
+        "as-13"
       ],
       "branch": "feat/as-04",
       "desc": "Agent mode selection \u2014 tile click enters agent mode"
@@ -39,7 +40,8 @@
       "depends": [
         "as-01",
         "as-02",
-        "as-03"
+        "as-03",
+        "as-13"
       ],
       "branch": "feat/as-05",
       "desc": "Agent panel move to top full height"
@@ -111,6 +113,20 @@
       ],
       "branch": "feat/as-12",
       "desc": "Integration pass \u2014 verify all agent modes + responsive"
+    },
+    "as-13": {
+      "status": "todo",
+      "phase": 1,
+      "depends": [],
+      "branch": "feat/as-13",
+      "desc": "Remove Predictor agent"
+    },
+    "as-14": {
+      "status": "todo",
+      "phase": 1,
+      "depends": [],
+      "branch": "feat/as-14",
+      "desc": "Sidebar redesign \u2014 narrow tile icons with labels"
     }
   }
 }
