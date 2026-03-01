@@ -910,9 +910,6 @@ export default function ChatPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" />
             {selectedAgent.icon} {selectedAgent.name}
           </span>
-          <span className="truncate rounded-full border border-[#2f2f3a] bg-[#15151d] px-2.5 py-1 font-mono text-gray-300">
-            {activeModelLabel}
-          </span>
         </div>
       </div>
 
