@@ -162,8 +162,7 @@
 - Social Manager (platform → tone → posting frequency → approval mode → confirm)
 - Browser Agent (task description → target URL → approval gate → confirm)
 - Clip Creator (video URL → style → length → output → confirm)
-- Predictor (question → timeframe → contrarian mode → confidence threshold → confirm)
-- **Done:** All 8 starter templates authored and tested
+- **Done:** All starter templates authored and tested
 
 ### P4-4: Freeform fallback
 - User can always skip guided flow and just type in chat

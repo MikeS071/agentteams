@@ -150,7 +150,7 @@ User request
 
 ### 5.5 Skills / Hands — Guided Workflows
 
-OpenFang ships with pre-built Hands (Researcher, Lead Gen, Collector, Twitter, Browser, Clip, Predictor). AgentSquads wraps each in a **guided workflow template** — a deterministic, step-by-step process that onboards the user into the Hand's capability without requiring them to know what to ask.
+OpenFang ships with pre-built Hands (Researcher, Lead Gen, Collector, Twitter, Browser, Clip). AgentSquads wraps each in a **guided workflow template** — a deterministic, step-by-step process that onboards the user into the Hand's capability without requiring them to know what to ask.
 
 #### How it works
 
@@ -186,10 +186,6 @@ Each Hand has a **Workflow Template** — a structured flow definition:
 │                                          │
 │  🎬 Clip Creator                         │
 │  "Turn videos into viral shorts"         │
-│  [Start] → guided flow                   │
-│                                          │
-│  🔮 Predictor                            │
-│  "Calibrated forecasting engine"         │
 │  [Start] → guided flow                   │
 └─────────────────────────────────────────┘
 ```

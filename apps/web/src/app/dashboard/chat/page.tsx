@@ -44,7 +44,6 @@ const AGENT_ORDER = [
   "social",
   "browser",
   "clip",
-  "predictor",
   "chat",
 ] as const;
 
@@ -883,9 +882,7 @@ export default function ChatPage() {
                     <span className="text-5xl">{selectedAgent.icon}</span>
                     <h2 className="text-xl font-bold text-white">{selectedAgent.name}</h2>
                     <p className="max-w-md text-sm text-gray-400">{selectedAgent.description}</p>
-                    <p className="text-xs text-gray-600">
-                      Pick any of the 8 agents from the grid and start chatting, or use Config to tune this Hand.
-                    </p>
+                    <p className="text-xs text-gray-600">Pick any of the {orderedAgents.length} agents from the grid and start chatting, or use Config to tune this Hand.</p>
                   </div>
                 ) : (
                   messages.map((message, index) => (
