@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AgentGrid from "@/components/AgentGrid";
+import AgentModeLayout from "@/components/AgentModeLayout";
 import AgentSetup, { type AgentWizardConfig } from "@/components/AgentSetup";
 import ChatInput from "@/components/ChatInput";
 import ChatMessage from "@/components/ChatMessage";
-import SwarmStatus from "@/components/SwarmStatus";
+import ResearchPanel from "@/components/ResearchPanel";
 import { AGENTS, getAgent, type AgentType } from "@/lib/agents";
 
 type Role = "user" | "assistant" | "system";
@@ -28,8 +29,6 @@ type Message = {
   suggestions?: string[];
   tools?: ToolExecution[];
 };
-
-type SwarmStatusSignal = { project?: string };
 
 type Conversation = { id: string; preview: string; createdAt: string; lastActivityAt: string };
 type AgentConfigMap = Record<string, AgentWizardConfig>;
@@ -203,27 +202,6 @@ function extractSuggestionList(data: Record<string, unknown>): string[] {
   return [];
 }
 
-function extractSwarmStatusSignal(input: unknown): SwarmStatusSignal | null {
-  const objectData = typeof input === "string" ? extractObject(safeJsonParse(input)) : extractObject(input);
-  if (!objectData) {
-    return null;
-  }
-
-  const type = typeof objectData.type === "string" ? objectData.type.toLowerCase() : "";
-  if (type !== "swarm_status") {
-    return null;
-  }
-
-  const project =
-    typeof objectData.project === "string" && objectData.project.trim()
-      ? objectData.project.trim()
-      : typeof objectData.projectName === "string" && objectData.projectName.trim()
-        ? objectData.projectName.trim()
-        : undefined;
-
-  return { project };
-}
-
 function parseToolName(data: Record<string, unknown>): string {
   const candidates = ["tool", "toolName", "tool_name", "name"];
   for (const key of candidates) {
@@ -254,13 +232,43 @@ function parseToolOutput(data: Record<string, unknown>): string {
   return "";
 }
 
+function isResearchProgressPayload(data: Record<string, unknown>, eventType: string): boolean {
+  const normalizedType = eventType.toLowerCase();
+  if (
+    ["pipeline", "progress", "stage", "source", "gap", "synth", "report"].some((needle) =>
+      normalizedType.includes(needle)
+    )
+  ) {
+    return true;
+  }
+
+  const keys = [
+    "pipeline",
+    "pipelineState",
+    "pipeline_state",
+    "stage",
+    "currentStage",
+    "steps",
+    "sources",
+    "source",
+    "gapAnalysis",
+    "gap_analysis",
+    "gaps",
+    "report",
+    "finalReport",
+    "final_report",
+    "reportMarkdown",
+  ];
+
+  return keys.some((key) => key in data);
+}
+
 export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const endRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedAgent, setSelectedAgent] = useState<AgentType>(getAgent("chat"));
-  const [activeMode, setActiveMode] = useState<AgentType | null>(null);
   const [wizardAgent, setWizardAgent] = useState<AgentType | null>(null);
   const [agentConfigs, setAgentConfigs] = useState<AgentConfigMap>(defaultConfigs);
   const [modelSelections, setModelSelections] = useState<Record<string, string>>({});
@@ -269,12 +277,11 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [researchEvents, setResearchEvents] = useState<Record<string, unknown>[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [replyLoading, setReplyLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [swarmVisible, setSwarmVisible] = useState(false);
-  const [swarmProject, setSwarmProject] = useState<string | undefined>(undefined);
 
   const activeConversationId = useMemo(() => searchParams?.get("conversationId") || undefined, [searchParams]);
 
@@ -317,6 +324,7 @@ export default function ChatPage() {
     setHistoryLoading(true);
     setError(null);
     setWizardAgent(null);
+    setResearchEvents([]);
     try {
       const res = await fetch(`/api/chat/history?conversationId=${id}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed");
@@ -340,13 +348,6 @@ export default function ChatPage() {
       void loadHistory(activeConversationId);
     }
   }, [activeConversationId, loadHistory]);
-
-  useEffect(() => {
-    if (!activeConversationId) {
-      return;
-    }
-    setActiveMode((prev) => prev ?? selectedAgent);
-  }, [activeConversationId, selectedAgent]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -498,6 +499,10 @@ export default function ChatPage() {
     []
   );
 
+  const pushResearchEvent = useCallback((payload: Record<string, unknown>) => {
+    setResearchEvents((prev) => [...prev.slice(-79), payload]);
+  }, []);
+
   const handleSend = useCallback(
     async (text: string) => {
       const messageText = text.trim();
@@ -589,12 +594,8 @@ export default function ChatPage() {
               eventName ||
               "message";
 
-            const swarmSignal = extractSwarmStatusSignal(objectData ?? dataRaw);
-            if (swarmSignal || effectiveType === "swarm_status") {
-              setSwarmVisible(true);
-              if (swarmSignal?.project) {
-                setSwarmProject(swarmSignal.project);
-              }
+            if (objectData && selectedAgent.id === "research" && isResearchProgressPayload(objectData, effectiveType)) {
+              pushResearchEvent(objectData);
             }
 
             const isTokenEvent = ["token", "delta", "content_delta", "message_delta", "text_delta", "chunk"].includes(effectiveType);
@@ -717,14 +718,6 @@ export default function ChatPage() {
           }));
         }
 
-        const messageSignal = extractSwarmStatusSignal(streamedText);
-        if (messageSignal) {
-          setSwarmVisible(true);
-          if (messageSignal.project) {
-            setSwarmProject(messageSignal.project);
-          }
-        }
-
         const finalSuggestions = ensureSuggestions(streamedSuggestions, streamedText);
         updateAssistantMessage(assistantId, (message) => ({
           ...message,
@@ -754,26 +747,17 @@ export default function ChatPage() {
         setReplyLoading(false);
       }
     },
-    [activeModelId, agentConfigs, conversationId, loadConversations, router, selectedAgent, updateAssistantMessage]
+    [activeModelId, agentConfigs, conversationId, loadConversations, pushResearchEvent, router, selectedAgent, updateAssistantMessage]
   );
 
   function handleAgentSelect(agent: AgentType) {
     setSelectedAgent(agent);
-    setActiveMode(agent);
     setSidebarOpen(false);
   }
 
   function handleAgentConfigOpen(agent: AgentType) {
     setSelectedAgent(agent);
-    setActiveMode(agent);
     setWizardAgent(agent);
-  }
-
-  function handleAgentStart(agent: AgentType) {
-    setSelectedAgent(agent);
-    setActiveMode(agent);
-    setSidebarOpen(false);
-    setWizardAgent(null);
   }
 
   function handleAgentConfigSave(config: AgentWizardConfig) {
@@ -791,10 +775,9 @@ export default function ChatPage() {
   function handleNewChat() {
     setConversationId(undefined);
     setMessages([]);
+    setResearchEvents([]);
     setError(null);
     setWizardAgent(null);
-    setActiveMode(null);
-    setSidebarOpen(false);
     router.replace("/dashboard/chat");
   }
 
@@ -817,28 +800,116 @@ export default function ChatPage() {
     return ensureSuggestions(lastAssistantMessage.suggestions, lastAssistantMessage.content);
   }, [lastAssistantMessage, replyLoading]);
 
-  if (activeMode === null) {
-    return (
-      <div className="relative flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0f]">
-        <section className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 py-8 sm:px-6">
-          <div className="w-full max-w-6xl">
-            <h1 className="mb-6 text-center text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
-              Choose an AI Agent to get started
-            </h1>
-            <AgentGrid
-              agents={orderedAgents}
-              selectedAgentId={null}
-              onSelect={handleAgentStart}
-              variant="hero"
-            />
-          </div>
-        </section>
+  const showResearchSplitLayout = selectedAgent.id === "research";
+
+  const chatContent = (
+    <>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
+          {historyLoading ? (
+            <p className="text-sm text-gray-400">Loading conversation...</p>
+          ) : !hasChat ? (
+            <div className="flex flex-col items-center justify-center gap-4 pt-20 text-center">
+              <span className="text-5xl">{selectedAgent.icon}</span>
+              <h2 className="text-xl font-bold text-white">{selectedAgent.name}</h2>
+              <p className="max-w-md text-sm text-gray-400">{selectedAgent.description}</p>
+              <p className="text-xs text-gray-600">Pick any of the {orderedAgents.length} agents from the grid and start chatting, or use Config to tune this Hand.</p>
+            </div>
+          ) : (
+            messages.map((message, index) => (
+              <div key={message.id || `${message.role}-${index}-${message.content.slice(0, 20)}`} className="space-y-2">
+                <ChatMessage role={message.role} content={message.content} />
+
+                {message.role === "assistant" && message.tools && message.tools.length > 0 && (
+                  <div className="mr-auto w-full max-w-[92%] space-y-2 sm:max-w-[80%]">
+                    {message.tools.map((tool) => (
+                      <details
+                        key={tool.id}
+                        open={tool.status === "running"}
+                        className="overflow-hidden rounded-lg border border-[#24313a] bg-[#0d1217]"
+                      >
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs text-gray-300">
+                          <span className="inline-flex items-center gap-2">
+                            {tool.status === "running" ? <Spinner /> : <span className="h-2 w-2 rounded-full bg-[#4ade80]" />}
+                            <span className="font-mono">{tool.name}</span>
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                              tool.status === "running"
+                                ? "bg-[#163c2a] text-[#9ff1c5]"
+                                : tool.status === "error"
+                                  ? "bg-[#3b1a1a] text-[#fca5a5]"
+                                  : "bg-[#122736] text-[#93c5fd]"
+                            }`}
+                          >
+                            {tool.status}
+                          </span>
+                        </summary>
+
+                        {tool.output && (
+                          <pre className="max-h-64 overflow-auto border-t border-[#1f2b34] bg-[#0a0e12] p-3 text-xs text-gray-200">
+                            <code>{tool.output}</code>
+                          </pre>
+                        )}
+                      </details>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+
+          {replyLoading && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl rounded-bl-md border border-[#23233a] bg-[#12121a] px-4 py-3 text-sm text-gray-100">
+                <LoadingDots />
+              </div>
+            </div>
+          )}
+
+          {followUpSuggestions.length > 0 && (
+            <div className="mr-auto flex w-full max-w-[92%] flex-wrap gap-2 sm:max-w-[80%]">
+              {followUpSuggestions.map((suggestion, index) => (
+                <button
+                  key={`${suggestion}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    if (!replyLoading && !historyLoading) {
+                      void handleSend(suggestion);
+                    }
+                  }}
+                  disabled={replyLoading || historyLoading}
+                  className="rounded-lg border border-[#2a3642] bg-[#0f141b] px-3 py-2 text-left text-xs text-gray-200 transition-colors hover:border-[#3f596f] hover:bg-[#141b24] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <div ref={endRef} />
+        </div>
       </div>
-    );
-  }
+
+      <div className="border-t border-[#1f1f2a] bg-[#0f0f16] px-3 py-2 sm:px-4">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-2 text-xs">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#2f8f5b]/50 bg-[#11271c] px-2.5 py-1 text-[#9ff1c5]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" />
+            {selectedAgent.icon} {selectedAgent.name}
+          </span>
+          <span className="truncate rounded-full border border-[#2f2f3a] bg-[#15151d] px-2.5 py-1 font-mono text-gray-300">
+            {activeModelLabel}
+          </span>
+        </div>
+      </div>
+
+      <ChatInput onSend={handleSend} disabled={replyLoading || historyLoading} />
+    </>
+  );
 
   return (
-    <div className="relative flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0f]">
+    <div className="relative flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0b]">
       {sidebarOpen && (
         <button
           type="button"
@@ -950,121 +1021,28 @@ export default function ChatPage() {
           </div>
         )}
 
-        {!wizardAgent && (
-          <>
-            {swarmVisible ? (
-              <SwarmStatus
-                compact
-                projectName={swarmProject}
-                onClose={() => {
-                  setSwarmVisible(false);
-                }}
-              />
-            ) : null}
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
-              <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
-                {historyLoading ? (
-                  <p className="text-sm text-gray-400">Loading conversation...</p>
-                ) : !hasChat ? (
-                  <div className="flex flex-col items-center justify-center gap-4 pt-20 text-center">
-                    <span className="text-5xl">{selectedAgent.icon}</span>
-                    <h2 className="text-xl font-bold text-white">{selectedAgent.name}</h2>
-                    <p className="max-w-md text-sm text-gray-400">{selectedAgent.description}</p>
-                    <p className="text-xs text-gray-600">Pick any of the {orderedAgents.length} agents from the grid and start chatting, or use Config to tune this Hand.</p>
-                  </div>
-                ) : (
-                  messages.map((message, index) => (
-                    <div key={message.id || `${message.role}-${index}-${message.content.slice(0, 20)}`} className="space-y-2">
-                      <ChatMessage role={message.role} content={message.content} />
-
-                      {message.role === "assistant" && message.tools && message.tools.length > 0 && (
-                        <div className="mr-auto w-full max-w-[92%] space-y-2 sm:max-w-[80%]">
-                          {message.tools.map((tool) => (
-                            <details
-                              key={tool.id}
-                              open={tool.status === "running"}
-                              className="overflow-hidden rounded-lg border border-[#24313a] bg-[#0d1217]"
-                            >
-                              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs text-gray-300">
-                                <span className="inline-flex items-center gap-2">
-                                  {tool.status === "running" ? <Spinner /> : <span className="h-2 w-2 rounded-full bg-[#4ade80]" />}
-                                  <span className="font-mono">{tool.name}</span>
-                                </span>
-                                <span
-                                  className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${
-                                    tool.status === "running"
-                                      ? "bg-[#163c2a] text-[#9ff1c5]"
-                                      : tool.status === "error"
-                                        ? "bg-[#3b1a1a] text-[#fca5a5]"
-                                        : "bg-[#122736] text-[#93c5fd]"
-                                  }`}
-                                >
-                                  {tool.status}
-                                </span>
-                              </summary>
-
-                              {tool.output && (
-                                <pre className="max-h-64 overflow-auto border-t border-[#1f2b34] bg-[#0a0e12] p-3 text-xs text-gray-200">
-                                  <code>{tool.output}</code>
-                                </pre>
-                              )}
-                            </details>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-
-                {replyLoading && (
-                  <div className="flex justify-start">
-                    <div className="rounded-2xl rounded-bl-md border border-[#23233a] bg-[#12121a] px-4 py-3 text-sm text-gray-100">
-                      <LoadingDots />
-                    </div>
-                  </div>
-                )}
-
-                {followUpSuggestions.length > 0 && (
-                  <div className="mr-auto flex w-full max-w-[92%] flex-wrap gap-2 sm:max-w-[80%]">
-                    {followUpSuggestions.map((suggestion, index) => (
-                      <button
-                        key={`${suggestion}-${index}`}
-                        type="button"
-                        onClick={() => {
-                          if (!replyLoading && !historyLoading) {
-                            void handleSend(suggestion);
-                          }
-                        }}
-                        disabled={replyLoading || historyLoading}
-                        className="rounded-lg border border-[#2a3642] bg-[#0f141b] px-3 py-2 text-left text-xs text-gray-200 transition-colors hover:border-[#3f596f] hover:bg-[#141b24] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {error && <p className="text-sm text-red-400">{error}</p>}
-                <div ref={endRef} />
-              </div>
-            </div>
-
-            <div className="border-t border-[#1f1f2a] bg-[#0f0f16] px-3 py-2 sm:px-4">
-              <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-2 text-xs">
-                <span className="inline-flex items-center gap-2 rounded-full border border-[#2f8f5b]/50 bg-[#11271c] px-2.5 py-1 text-[#9ff1c5]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" />
-                  {selectedAgent.icon} {selectedAgent.name}
-                </span>
-                <span className="truncate rounded-full border border-[#2f2f3a] bg-[#15151d] px-2.5 py-1 font-mono text-gray-300">
-                  {activeModelLabel}
-                </span>
-              </div>
-            </div>
-
-            <ChatInput onSend={handleSend} disabled={replyLoading || historyLoading} />
-          </>
-        )}
+        {!wizardAgent &&
+          (showResearchSplitLayout ? (
+            <AgentModeLayout
+              agentId={selectedAgent.id}
+              splitRatio="1fr 1fr"
+              chatPanel={<div className="flex h-full min-h-0 flex-col overflow-hidden">{chatContent}</div>}
+              sidePanel={
+                <ResearchPanel
+                  messages={messages}
+                  liveEvents={researchEvents}
+                  disabled={replyLoading || historyLoading}
+                  onSendDirection={(direction) => {
+                    if (!replyLoading && !historyLoading) {
+                      void handleSend(direction);
+                    }
+                  }}
+                />
+              }
+            />
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col">{chatContent}</div>
+          ))}
       </section>
     </div>
   );
