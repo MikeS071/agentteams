@@ -32,18 +32,47 @@ const settingsItems: NavItem[] = [
   { href: "/dashboard/settings/deploy", label: "Deploy", icon: "rocket", feature: "deploy" },
 ];
 
+type DashboardSession = {
+  user: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    tenantId: string;
+  };
+};
+
+const E2E_TEST_MODE = process.env.E2E_TEST_MODE === "1";
+const E2E_FEATURE_MAP: Record<Feature, boolean> = {
+  swarm: true,
+  terminal: true,
+  deploy: true,
+  telegram: true,
+  whatsapp: true,
+  webchat: true,
+  catalog: true,
+};
+
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
+  const session = E2E_TEST_MODE
+    ? ({
+      user: {
+        name: "E2E User",
+        email: "e2e@example.com",
+        image: null,
+        tenantId: "tenant-e2e",
+      },
+    } satisfies DashboardSession)
+    : (await getServerSession(authOptions) as DashboardSession | null);
 
   if (!session?.user) {
     redirect("/login");
   }
 
-  const featureMap = await getTenantFeatureMap(session.user.tenantId);
+  const featureMap = E2E_TEST_MODE ? E2E_FEATURE_MAP : await getTenantFeatureMap(session.user.tenantId);
   const navItemsWithIcons = navItems as SidebarItem[];
   const settingsItemsWithIcons = settingsItems as SidebarItem[];
 
