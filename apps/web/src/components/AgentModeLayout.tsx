@@ -1,31 +1,23 @@
-"use client";
+import type { ReactNode } from "react";
 
-import type { CSSProperties, ReactNode } from "react";
-
-type Props = {
+type AgentModeLayoutProps = {
   agentId: string;
   chatPanel: ReactNode;
   sidePanel?: ReactNode;
   splitRatio?: string;
 };
 
-export default function AgentModeLayout({ agentId, chatPanel, sidePanel, splitRatio }: Props) {
-  const hasSidePanel = Boolean(sidePanel);
-  const style = hasSidePanel
-    ? ({ "--agent-mode-split": splitRatio || "1fr 1fr" } as CSSProperties)
-    : undefined;
+export default function AgentModeLayout({ agentId, chatPanel, sidePanel, splitRatio }: AgentModeLayoutProps) {
+  const gridTemplateColumns = splitRatio ?? (sidePanel ? "360px minmax(0, 1fr)" : "minmax(0, 1fr)");
 
   return (
-    <div data-agent-mode={agentId} className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4">
-      <div
-        className={`grid h-full min-h-0 gap-3 ${
-          hasSidePanel ? "grid-cols-1 xl:[grid-template-columns:var(--agent-mode-split)]" : "grid-cols-1"
-        }`}
-        style={style}
-      >
-        <div className="min-h-0">{chatPanel}</div>
-        {hasSidePanel ? <div className="min-h-0">{sidePanel}</div> : null}
-      </div>
+    <div
+      className="relative grid h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0b]"
+      style={{ gridTemplateColumns }}
+      data-agent-id={agentId}
+    >
+      {sidePanel}
+      {chatPanel}
     </div>
   );
 }
