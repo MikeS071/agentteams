@@ -16,74 +16,118 @@ export type QuickAction = {
 };
 
 export const QUICK_ACTIONS: Record<string, QuickAction[]> = {
-  research: [
+  research: [],
+  coder: [
     {
-      id: "start-research",
-      label: "Start New Research",
-      icon: "🔬",
+      id: "new-project",
+      label: "Project",
+      icon: "📦",
       fields: [
         {
-          id: "question",
-          label: "Research Question",
-          placeholder: "e.g. What are the most effective AI agent frameworks for production use in 2026?",
+          id: "project_name",
+          label: "Project Name",
+          placeholder: "e.g. my-api-service",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "project_type",
+          label: "Type",
+          placeholder: "What kind?",
+          type: "select",
+          required: true,
+          options: ["SKILL", "FEATURE", "WEBAPP", "LANDING_PAGE", "CLI_TOOL", "API_SERVICE", "LIBRARY"],
+        },
+        {
+          id: "goal",
+          label: "Goal",
+          placeholder: "e.g. Build a REST API for user management",
           type: "textarea",
           required: true,
         },
         {
           id: "description",
-          label: "Description / Context",
-          placeholder: "e.g. Focus on frameworks that support multi-agent coordination, tool use, and memory",
+          label: "Description",
+          placeholder: "Detailed description of what you want built",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "requirements",
+          label: "Requirements",
+          placeholder: "e.g. Must support JWT auth, PostgreSQL, rate limiting",
           type: "textarea",
           required: false,
         },
+      ],
+      promptTemplate: `Spec out a new project {{project_name}} which we'll build using agent-swarm. This is a new {{project_type}}.
+Requirements are:
+GOAL: {{goal}}
+DESCRIPTION: {{description}}
+REQUIREMENTS: {{requirements}}
+INSTRUCTIONS:
+Create a new project directory, create the spec, ask me any clarifying questions one-by-one to improve the spec and remove ambiguous areas. Be detailed and present examples for me to decide on design options or direction.
+Once a spec is done, ask me to approve to proceed to create a detailed execution plan, and then break this down into small 5-10min tickets that can be built by the swarm agents. Register the project/tickets into the swarm project/register.
+Ensure each ticket/agent follow TDD principles (create failing tests matching functional specs, then build, then test, then break-fix). Include a ticket to, once all tickets are built, to merge all branches before a final audit and integration tests are run.
+{{#project_type_is_skill}}For SKILL projects: use go cli as implementation. Include SKILL.MD and splice appropriate instructions into MEMORY.md, TOOLS.md and AGENTS.md so they can be appended to a new OpenClaw instance environment.{{/project_type_is_skill}}
+Include at the end:
+- Merge of all the worktrees/branches and resolve conflicts
+- Execute End to end comprehensive integration and functional test suite
+- Update all relevant user and technical doco
+
+Lastly, ask me to approve to proceed to build.`,
+    },
+    {
+      id: "new-webpage",
+      label: "Web Page",
+      icon: "🌐",
+      fields: [
         {
-          id: "depth",
-          label: "Depth",
-          placeholder: "How deep?",
-          type: "select",
-          required: false,
-          options: [
-            "Quick brief (500-800 words)",
-            "Standard report (1500-2500 words)",
-            "Deep dive (3000-5000 words)",
-            "Comprehensive (no word limit)",
-          ],
+          id: "page_name",
+          label: "Page Name",
+          placeholder: "e.g. pricing-page",
+          type: "text",
+          required: true,
         },
         {
-          id: "audience",
-          label: "Target Audience",
-          placeholder: "e.g. Technical leadership, engineering team",
-          type: "text",
-          required: false,
+          id: "goal",
+          label: "Goal",
+          placeholder: "e.g. A pricing page with 3 tiers and Stripe checkout",
+          type: "textarea",
+          required: true,
         },
         {
-          id: "sources",
-          label: "Source Priorities",
-          placeholder: "e.g. Prefer peer-reviewed papers over blog posts",
-          type: "text",
+          id: "description",
+          label: "Description",
+          placeholder: "Layout, sections, style preferences",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "requirements",
+          label: "Requirements",
+          placeholder: "e.g. Responsive, dark theme, animations",
+          type: "textarea",
           required: false,
         },
       ],
-      promptTemplate: `Research the following topic thoroughly and produce a comprehensive report.
+      promptTemplate: `Spec out a new project {{page_name}} which we'll build using agent-swarm. This is a new LANDING_PAGE.
+Requirements are:
+GOAL: {{goal}}
+DESCRIPTION: {{description}}
+REQUIREMENTS: {{requirements}}
+INSTRUCTIONS:
+Create a new project directory, create the spec, ask me any clarifying questions one-by-one to improve the spec and remove ambiguous areas. Be detailed and present examples for me to decide on design options or direction.
+Once a spec is done, ask me to approve to proceed to create a detailed execution plan, and then break this down into small 5-10min tickets that can be built by the swarm agents. Register the project/tickets into the swarm project/register.
+Ensure each ticket/agent follow TDD principles (create failing tests matching functional specs, then build, then test, then break-fix).
+Include at the end:
+- Merge of all the worktrees/branches and resolve conflicts
+- Execute End to end comprehensive integration and functional test suite
+- Update all relevant user and technical doco
 
-**Research Question:** {{question}}
-{{#description}}
-**Context:** {{description}}
-{{/description}}
-{{#depth}}
-**Depth:** {{depth}}
-{{/depth}}
-{{#audience}}
-**Target Audience:** {{audience}}
-{{/audience}}
-{{#sources}}
-**Source Priorities:** {{sources}}
-{{/sources}}
-
-Follow your research methodology: decompose into sub-questions, search multiple source types, triangulate findings, identify gaps, and synthesize into a structured report with citations.`,
+Lastly, ask me to approve to proceed to build.`,
     },
   ],
-  coder: [],
   social: [],
   clip: [],
   intel: [],
