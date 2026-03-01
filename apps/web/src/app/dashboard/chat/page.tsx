@@ -47,7 +47,7 @@ const AGENT_ORDER = ["research", "coder", "intel", "social", "clip", "chat"] as 
 const SELECTED_AGENT_KEY = "openfang:selected-agent";
 const AGENT_CONFIGS_KEY = "openfang:agent-configs-v1";
 const MODEL_SELECTIONS_KEY = "openfang:model-selections-v1";
-const DEFAULT_MODEL = "openai/gpt-4o-mini";
+const DEFAULT_MODEL = "openai/gpt-4.1-mini";
 const DEFAULT_TOOLS = ["web_search", "web_fetch"];
 
 function LoadingDots() {
@@ -275,7 +275,7 @@ export default function ChatPage() {
     if (!found) {
       return activeModelId || currentAgentConfig.modelPreference;
     }
-    return `${found.provider} · ${found.name}`;
+    return found.name;
   }, [activeModelId, currentAgentConfig.modelPreference, models]);
 
   const loadHistory = useCallback(async (id: string) => {
@@ -777,44 +777,15 @@ export default function ChatPage() {
 
   const chatPanel = (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1a1a1f] px-3 py-2">
-        <div className="flex min-w-0 items-center gap-2 text-sm text-gray-300">
+      <div className="flex items-center justify-between border-b border-[#1a1a1f] px-3 py-2">
+        <div className="flex items-center gap-2 text-sm text-gray-300">
           <span>{selectedAgent.icon}</span>
           <span className="font-medium text-gray-100">{selectedAgent.name}</span>
           <span className="rounded-full bg-[#173425] px-2 py-0.5 text-xs text-[#9ff1c5]">active</span>
-          <button
-            type="button"
-            onClick={() => setWizardAgent(selectedAgent)}
-            className="ml-1 rounded-md border border-[#2f2f37] px-3 py-1.5 text-xs text-gray-300 hover:text-white"
-          >
-            Configure
-          </button>
-          <button
-            type="button"
-            onClick={handleNewChat}
-            className="rounded-md bg-[#2563eb] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#1d4ed8]"
-          >
-            + New
-          </button>
         </div>
-        <label className="flex max-w-full items-center gap-2 text-xs text-gray-300">
-          <span className="shrink-0 text-gray-400">Model:</span>
-          <select
-            value={activeModelId}
-            onChange={(event) => {
-              const next = event.target.value;
-              setModelSelections((prev) => ({ ...prev, [selectedAgent.id]: next }));
-            }}
-            className="h-8 max-w-[280px] rounded-md border border-[#2c3440] bg-[#0c0f14] px-2 text-xs text-gray-200 focus:border-[#3b82f6] focus:outline-none"
-            aria-label={`Select model for ${selectedAgent.name}`}
-          >
-            {models.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.provider} · {model.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <span className="truncate rounded-full border border-[#2f2f3a] bg-[#15151d] px-2.5 py-1 font-mono text-xs text-gray-300">
+          {activeModelLabel}
+        </span>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
@@ -910,6 +881,9 @@ export default function ChatPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" />
             {selectedAgent.icon} {selectedAgent.name}
           </span>
+          <span className="truncate rounded-full border border-[#2f2f3a] bg-[#15151d] px-2.5 py-1 font-mono text-gray-300">
+            {activeModelLabel}
+          </span>
         </div>
       </div>
 
@@ -938,7 +912,7 @@ export default function ChatPage() {
       ) : (
         <>
           <div className="border-b border-[#1a1a1f] bg-[#0d0d12] px-3 py-2 sm:px-4">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <button
                   type="button"
@@ -948,6 +922,38 @@ export default function ChatPage() {
                   Back to agents
                 </button>
                 <AgentModeSelector agents={orderedAgents} activeAgentId={selectedAgent.id} onSelect={handleModeSwitch} />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWizardAgent(selectedAgent)}
+                  className="rounded-md border border-[#2f2f37] px-3 py-1.5 text-xs text-gray-300 hover:text-white"
+                >
+                  Configure
+                </button>
+                <select
+                  value={activeModelId}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setModelSelections((prev) => ({ ...prev, [selectedAgent.id]: next }));
+                  }}
+                  className="h-8 max-w-[240px] rounded-md border border-[#2c3440] bg-[#0c0f14] px-2 text-xs text-gray-200 focus:border-[#3b82f6] focus:outline-none"
+                  aria-label="Select model"
+                >
+                  {models.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleNewChat}
+                  className="rounded-md bg-[#2563eb] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#1d4ed8]"
+                >
+                  + New Chat
+                </button>
               </div>
             </div>
           </div>

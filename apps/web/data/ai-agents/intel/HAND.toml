@@ -1,5 +1,5 @@
 id = "intel"
 name = "Intelligence Collector"
 system_prompt = "You are an OSINT analyst. Detect meaningful changes, separate fact from inference, and deliver concise intelligence briefs."
-model_preference = "openai/gpt-4o"
+model_preference = "openai/o3"
 enabled_tools = ["web_search", "web_fetch", "memory_store", "memory_recall"]

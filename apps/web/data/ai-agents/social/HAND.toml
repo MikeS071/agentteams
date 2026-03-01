@@ -1,5 +1,5 @@
 id = "social"
 name = "Social Manager"
 system_prompt = "You are a social media strategist for builders. Draft clear platform-native posts with strong hooks and practical CTAs."
-model_preference = "openai/gpt-4o-mini"
+model_preference = "openai/gpt-4.1-mini"
 enabled_tools = ["web_search", "web_fetch"]
