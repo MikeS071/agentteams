@@ -37,7 +37,7 @@ Signup failed: Error: boom
  ✓ src/app/api/deploy/run/route.test.ts (4 tests) 127ms
  ✓ src/app/api/admin/models/route.test.ts (4 tests) 119ms
  ✓ src/app/api/billing/checkout/route.test.ts (4 tests) 143ms
- ✓ src/app/api/hands/[id]/approve/[actionId]/route.test.ts (3 tests) 33ms
+ ✓ src/app/api/ai-agents/[id]/approve/[actionId]/route.test.ts (3 tests) 33ms
 stderr | src/app/api/billing/usage/route.test.ts > api/billing/usage > handles db errors
 Billing usage error: Error: db
     at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/billing/usage/route.test.ts:43:39
@@ -45,7 +45,7 @@ Billing usage error: Error: db
     at file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+runner@4.0.18/node_modules/@vitest/runner/dist/index.js:915:20
 
  ✓ src/app/api/billing/usage/route.test.ts (3 tests) 37ms
- ✓ src/app/api/hands/events/route.test.ts (3 tests) 31ms
+ ✓ src/app/api/ai-agents/events/route.test.ts (3 tests) 31ms
  ✓ src/app/api/channels/route.test.ts (3 tests) 32ms
  ✓ src/app/api/swarm/tasks/route.test.ts (4 tests) 36ms
 stderr | src/app/api/usage/daily/route.test.ts > api/usage/daily > handles errors
@@ -55,13 +55,13 @@ Daily usage error: Error: db
     at file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+runner@4.0.18/node_modules/@vitest/runner/dist/index.js:915:20
 
  ✓ src/app/api/usage/daily/route.test.ts (3 tests) 34ms
-stderr | src/app/api/hands/route.test.ts > api/hands > handles upstream failure
-hands GET error Error: boom
-    at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/hands/route.test.ts:30:50
+stderr | src/app/api/ai-agents/route.test.ts > api/ai-agents > handles upstream failure
+ai-agents GET error Error: boom
+    at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/ai-agents/route.test.ts:30:50
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at file:///home/openclaw/projects/agentteams-worktrees/test-web/node_modules/.pnpm/@vitest+runner@4.0.18/node_modules/@vitest/runner/dist/index.js:915:20
 
- ✓ src/app/api/hands/route.test.ts (3 tests) 34ms
+ ✓ src/app/api/ai-agents/route.test.ts (3 tests) 34ms
 stderr | src/app/api/billing/balance/route.test.ts > api/billing/balance > handles db error
 Billing balance error: Error: db
     at /home/openclaw/projects/agentteams-worktrees/test-web/apps/web/src/app/api/billing/balance/route.test.ts:35:39
@@ -71,7 +71,7 @@ Billing balance error: Error: db
  ✓ src/app/api/billing/balance/route.test.ts (3 tests) 34ms
  ✓ src/app/api/chat/conversations/route.test.ts (3 tests) 39ms
  ✓ src/app/api/tenant/status/route.test.ts (3 tests) 30ms
- ✓ src/app/api/hands/[id]/reject/[actionId]/route.test.ts (3 tests) 48ms
+ ✓ src/app/api/ai-agents/[id]/reject/[actionId]/route.test.ts (3 tests) 48ms
  ✓ src/app/api/models/route.test.ts (2 tests) 36ms
  ✓ src/app/api/admin/tenants/route.test.ts (3 tests) 71ms
  ✓ src/app/api/admin/stats/route.test.ts (2 tests) 197ms

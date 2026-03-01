@@ -5,7 +5,7 @@ async function loadRoute() {
   return import('./route')
 }
 
-describe('api/hands', () => {
+describe('api/ai-agents', () => {
   it('returns unauthorized without session', async () => {
     const { GET } = await loadRoute()
     setSession(null)
@@ -14,14 +14,14 @@ describe('api/hands', () => {
     expect(res.status).toBe(401)
   })
 
-  it('lists hands', async () => {
+  it('lists AI agents', async () => {
     const { GET } = await loadRoute()
     setSession({ tenantId: 'tenant-1' })
-    global.fetch = vi.fn().mockResolvedValueOnce(new Response('{"hands":[{"id":"h1"}]}', { status: 200, headers: { 'content-type': 'application/json' } })) as typeof fetch
+    global.fetch = vi.fn().mockResolvedValueOnce(new Response('{"ai_agents":[{"id":"h1"}]}', { status: 200, headers: { 'content-type': 'application/json' } })) as typeof fetch
 
     const res = await GET()
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ hands: [{ id: 'h1' }] })
+    expect(await res.json()).toEqual({ ai_agents: [{ id: 'h1' }] })
   })
 
   it('handles upstream failure', async () => {

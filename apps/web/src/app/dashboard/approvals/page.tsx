@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   formatApprovalTime,
-  HANDS_SSE_EVENT_NAMES,
+  AI_AGENT_SSE_EVENT_NAMES,
   hydrateApprovalsFromStorage,
   parseApprovalEvent,
   persistApprovalsToStorage,
@@ -32,7 +32,7 @@ function riskClassName(risk: ApprovalRisk): string {
 }
 
 async function sendDecision(item: ApprovalItem, decision: Decision): Promise<void> {
-  const response = await fetch(`/api/hands/${encodeURIComponent(item.handId)}/${decision}/${encodeURIComponent(item.actionId)}`, {
+  const response = await fetch(`/api/ai-agents/${encodeURIComponent(item.handId)}/${decision}/${encodeURIComponent(item.actionId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
@@ -62,7 +62,7 @@ export default function ApprovalsPage() {
   useEffect(() => {
     setApprovals(hydrateApprovalsFromStorage());
 
-    const source = new EventSource("/api/hands/events");
+    const source = new EventSource("/api/ai-agents/events");
 
     source.onopen = () => {
       setStreamConnected(true);
@@ -83,7 +83,7 @@ export default function ApprovalsPage() {
       });
     };
     source.onmessage = handleEvent;
-    HANDS_SSE_EVENT_NAMES.forEach((eventName) => {
+    AI_AGENT_SSE_EVENT_NAMES.forEach((eventName) => {
       source.addEventListener(eventName, handleEvent as EventListener);
     });
 
@@ -93,7 +93,7 @@ export default function ApprovalsPage() {
     };
 
     return () => {
-      HANDS_SSE_EVENT_NAMES.forEach((eventName) => {
+      AI_AGENT_SSE_EVENT_NAMES.forEach((eventName) => {
         source.removeEventListener(eventName, handleEvent as EventListener);
       });
       source.close();
@@ -176,7 +176,7 @@ export default function ApprovalsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold text-gray-100">Approval Queue</h1>
-            <p className="mt-1 text-sm text-gray-400">Review and approve or reject sensitive Hand actions.</p>
+            <p className="mt-1 text-sm text-gray-400">Review and approve or reject sensitive AI Agent actions.</p>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <span
@@ -215,7 +215,7 @@ export default function ApprovalsPage() {
           <table className="min-w-full divide-y divide-[#222235] text-sm">
             <thead className="bg-[#10101a] text-gray-400">
               <tr>
-                <th className="px-3 py-2 text-left font-medium">Hand</th>
+                <th className="px-3 py-2 text-left font-medium">AI Agent</th>
                 <th className="px-3 py-2 text-left font-medium">Action</th>
                 <th className="px-3 py-2 text-left font-medium">Risk</th>
                 <th className="px-3 py-2 text-left font-medium">Requested</th>
@@ -306,7 +306,7 @@ export default function ApprovalsPage() {
 
             <div className="space-y-4 px-5 py-4 text-sm">
               <div>
-                <p className="text-xs uppercase tracking-wide text-gray-500">What the Hand wants to do</p>
+                <p className="text-xs uppercase tracking-wide text-gray-500">What the AI agent wants to do</p>
                 <p className="mt-1 text-gray-100">{selected.actionDescription}</p>
               </div>
 
