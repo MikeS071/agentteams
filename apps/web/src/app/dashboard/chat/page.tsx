@@ -6,6 +6,7 @@ import AgentGrid from "@/components/AgentGrid";
 import AgentSetup, { type AgentWizardConfig } from "@/components/AgentSetup";
 import ChatInput from "@/components/ChatInput";
 import ChatMessage from "@/components/ChatMessage";
+import SwarmStatus from "@/components/SwarmStatus";
 import { AGENTS, getAgent, type AgentType } from "@/lib/agents";
 
 type Role = "user" | "assistant" | "system";
@@ -27,6 +28,8 @@ type Message = {
   suggestions?: string[];
   tools?: ToolExecution[];
 };
+
+type SwarmStatusSignal = { project?: string };
 
 type Conversation = { id: string; preview: string; createdAt: string; lastActivityAt: string };
 type AgentConfigMap = Record<string, AgentWizardConfig>;
@@ -200,6 +203,27 @@ function extractSuggestionList(data: Record<string, unknown>): string[] {
   return [];
 }
 
+function extractSwarmStatusSignal(input: unknown): SwarmStatusSignal | null {
+  const objectData = typeof input === "string" ? extractObject(safeJsonParse(input)) : extractObject(input);
+  if (!objectData) {
+    return null;
+  }
+
+  const type = typeof objectData.type === "string" ? objectData.type.toLowerCase() : "";
+  if (type !== "swarm_status") {
+    return null;
+  }
+
+  const project =
+    typeof objectData.project === "string" && objectData.project.trim()
+      ? objectData.project.trim()
+      : typeof objectData.projectName === "string" && objectData.projectName.trim()
+        ? objectData.projectName.trim()
+        : undefined;
+
+  return { project };
+}
+
 function parseToolName(data: Record<string, unknown>): string {
   const candidates = ["tool", "toolName", "tool_name", "name"];
   for (const key of candidates) {
@@ -249,6 +273,8 @@ export default function ChatPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [replyLoading, setReplyLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [swarmVisible, setSwarmVisible] = useState(false);
+  const [swarmProject, setSwarmProject] = useState<string | undefined>(undefined);
 
   const activeConversationId = useMemo(() => searchParams?.get("conversationId") || undefined, [searchParams]);
 
@@ -563,6 +589,14 @@ export default function ChatPage() {
               eventName ||
               "message";
 
+            const swarmSignal = extractSwarmStatusSignal(objectData ?? dataRaw);
+            if (swarmSignal || effectiveType === "swarm_status") {
+              setSwarmVisible(true);
+              if (swarmSignal?.project) {
+                setSwarmProject(swarmSignal.project);
+              }
+            }
+
             const isTokenEvent = ["token", "delta", "content_delta", "message_delta", "text_delta", "chunk"].includes(effectiveType);
             if (isTokenEvent) {
               const tokenText = objectData ? extractTextValue(objectData) : dataRaw;
@@ -681,6 +715,14 @@ export default function ChatPage() {
             ...message,
             content: streamedText,
           }));
+        }
+
+        const messageSignal = extractSwarmStatusSignal(streamedText);
+        if (messageSignal) {
+          setSwarmVisible(true);
+          if (messageSignal.project) {
+            setSwarmProject(messageSignal.project);
+          }
         }
 
         const finalSuggestions = ensureSuggestions(streamedSuggestions, streamedText);
@@ -910,6 +952,16 @@ export default function ChatPage() {
 
         {!wizardAgent && (
           <>
+            {swarmVisible ? (
+              <SwarmStatus
+                compact
+                projectName={swarmProject}
+                onClose={() => {
+                  setSwarmVisible(false);
+                }}
+              />
+            ) : null}
+
             <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
               <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
                 {historyLoading ? (
