@@ -8,16 +8,19 @@ type AgentModeLayoutProps = {
 };
 
 export default function AgentModeLayout({ agentId, chatPanel, sidePanel, splitRatio }: AgentModeLayoutProps) {
-  const gridTemplateColumns = splitRatio ?? (sidePanel ? "360px minmax(0, 1fr)" : "minmax(0, 1fr)");
+  const hasSidePanel = Boolean(sidePanel);
+  const gridTemplateColumns = hasSidePanel
+    ? (splitRatio ?? "minmax(0, 1fr) minmax(0, 1fr)")
+    : (splitRatio ?? "minmax(0, 1fr)");
 
   return (
     <div
-      className="relative grid h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0b]"
+      data-agent-mode={agentId}
+      className="grid min-h-0 flex-1 gap-4 px-3 py-4 sm:px-5"
       style={{ gridTemplateColumns }}
-      data-agent-id={agentId}
     >
-      {sidePanel}
-      {chatPanel}
+      <div className="min-h-0 min-w-0">{chatPanel}</div>
+      {hasSidePanel && <aside className="min-h-0 min-w-0 overflow-y-auto">{sidePanel}</aside>}
     </div>
   );
 }
