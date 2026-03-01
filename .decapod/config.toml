@@ -1,0 +1,20 @@
+schema_version = "1.0.0"
+
+[init]
+specs = true
+diagram_style = "ascii"
+entrypoints = [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "CODEX.md",
+]
+
+[repo]
+product_name = "agentsquads"
+product_summary = "AgentSquads is a multi-agent workspace with chat-first workflows, contextual side panels, and swarm monitoring."
+architecture_direction = "Composable repository architecture with explicit boundaries and proof-backed delivery invariants."
+product_type = "service_or_library"
+done_criteria = "Decapod validate passes, required tests pass, and promotion-relevant artifacts are present."
+primary_languages = ["typescript/javascript"]
+detected_surfaces = ["npm"]
