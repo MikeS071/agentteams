@@ -39,7 +39,7 @@
         "as-15"
       ],
       "branch": "feat/as-04",
-      "desc": "Agent mode selection \u2014 tile click enters agent mode",
+      "desc": "Agent mode selection — tile click enters agent mode",
       "sha": "22f688f",
       "startedAt": "2026-03-01T07:30:29Z"
     },
@@ -65,7 +65,7 @@
         "as-04"
       ],
       "branch": "feat/as-06",
-      "desc": "Research Assistant split UI \u2014 Chat + Research panel",
+      "desc": "Research Assistant split UI — Chat + Research panel",
       "sha": "0356516",
       "startedAt": "2026-03-01T07:43:08Z"
     },
@@ -76,7 +76,7 @@
         "as-04"
       ],
       "branch": "feat/as-07",
-      "desc": "Coder \u2014 full Chat UI mode",
+      "desc": "Coder — full Chat UI mode",
       "sha": "ce135e0",
       "startedAt": "2026-03-01T07:43:08Z"
     },
@@ -87,7 +87,7 @@
         "as-04"
       ],
       "branch": "feat/as-08",
-      "desc": "Intelligence Collector \u2014 Chat + Intel panel",
+      "desc": "Intelligence Collector — Chat + Intel panel",
       "sha": "5826638",
       "startedAt": "2026-03-01T07:43:09Z"
     },
@@ -98,7 +98,7 @@
         "as-04"
       ],
       "branch": "feat/as-09",
-      "desc": "Social Manager \u2014 Chat + Calendar/ContentAI panel",
+      "desc": "Social Manager — Chat + Calendar/ContentAI panel",
       "sha": "0bc801b",
       "startedAt": "2026-03-01T07:50:44Z"
     },
@@ -109,7 +109,7 @@
         "as-04"
       ],
       "branch": "feat/as-10",
-      "desc": "Clip Creator \u2014 Chat + Media panel",
+      "desc": "Clip Creator — Chat + Media panel",
       "sha": "804a336",
       "startedAt": "2026-03-01T07:51:45Z"
     },
@@ -120,18 +120,19 @@
         "as-04"
       ],
       "branch": "feat/as-11",
-      "desc": "General Chat \u2014 standard Chat UI",
+      "desc": "General Chat — standard Chat UI",
       "sha": "0ec1933",
       "startedAt": "2026-03-01T07:52:46Z"
     },
     "as-12": {
-      "status": "running",
+      "status": "done",
       "phase": 4,
       "depends": [
         "as-17"
       ],
       "branch": "feat/as-12",
-      "desc": "Integration pass \u2014 verify all agent modes + responsive",
+      "desc": "Integration pass — verify all agent modes + responsive",
+      "sha": "f1e20df",
       "startedAt": "2026-03-01T08:00:50Z"
     },
     "as-13": {
@@ -148,7 +149,7 @@
       "phase": 1,
       "depends": [],
       "branch": "feat/as-14",
-      "desc": "Sidebar redesign \u2014 narrow tile icons with labels",
+      "desc": "Sidebar redesign — narrow tile icons with labels",
       "sha": "b5154e6",
       "startedAt": "2026-03-01T07:24:56Z"
     },
@@ -177,7 +178,7 @@
       "startedAt": "2026-03-01T07:30:30Z"
     },
     "as-17": {
-      "status": "todo",
+      "status": "done",
       "phase": 4,
       "depends": [
         "as-06",
@@ -189,25 +190,31 @@
         "as-16"
       ],
       "branch": "feat/as-17",
-      "desc": "Integration merge \u2014 merge all branches into main + resolve conflicts"
+      "desc": "Integration merge — merge all branches into main + resolve conflicts",
+      "sha": "f18732b",
+      "startedAt": "2026-03-01T08:19:53Z"
     },
     "as-18": {
-      "status": "todo",
+      "status": "done",
       "phase": 4,
       "depends": [
         "as-17"
       ],
       "branch": "feat/as-18",
-      "desc": "Comprehensive E2E test suite for all agent modes + UI flows"
+      "desc": "Comprehensive E2E test suite for all agent modes + UI flows",
+      "sha": "b8afee1",
+      "startedAt": "2026-03-01T08:34:26Z"
     },
     "as-19": {
-      "status": "todo",
+      "status": "done",
       "phase": 4,
       "depends": [
         "as-18"
       ],
       "branch": "feat/as-19",
-      "desc": "Update user and technical documentation"
+      "desc": "Update user and technical documentation",
+      "sha": "70c988f",
+      "startedAt": "2026-03-01T09:02:30Z"
     }
   },
   "unlocked_phase": 4
