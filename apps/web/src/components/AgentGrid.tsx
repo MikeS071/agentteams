@@ -4,12 +4,57 @@ import type { AgentType } from "@/lib/agents";
 
 type Props = {
   agents: AgentType[];
-  selectedAgentId: string;
+  selectedAgentId?: string | null;
   onSelect: (agent: AgentType) => void;
-  onConfigure: (agent: AgentType) => void;
+  onConfigure?: (agent: AgentType) => void;
+  variant?: "compact" | "hero";
 };
 
-export default function AgentGrid({ agents, selectedAgentId, onSelect, onConfigure }: Props) {
+export default function AgentGrid({
+  agents,
+  selectedAgentId,
+  onSelect,
+  onConfigure,
+  variant = "compact",
+}: Props) {
+  if (variant === "hero") {
+    return (
+      <div className="rounded-3xl border border-[#24242c] bg-[#0f0f14] p-4 sm:p-6">
+        <div
+          className="grid gap-4"
+          style={{
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          }}
+        >
+          {agents.map((agent) => {
+            const isActive = selectedAgentId === agent.id;
+            return (
+              <article
+                key={agent.id}
+                className={`flex min-h-[220px] flex-col rounded-2xl border p-5 transition ${
+                  isActive
+                    ? "border-[#2f8f5b] bg-[#102018]"
+                    : "border-[#2a2a34] bg-[#14141b] hover:border-[#3d3d48] hover:bg-[#181821]"
+                }`}
+              >
+                <div className="text-4xl">{agent.icon}</div>
+                <h3 className="mt-4 text-lg font-semibold text-gray-100">{agent.name}</h3>
+                <p className="mt-2 line-clamp-3 text-sm text-gray-400">{agent.description}</p>
+                <button
+                  type="button"
+                  onClick={() => onSelect(agent)}
+                  className="mt-auto inline-flex h-10 items-center justify-center rounded-lg border border-[#2f8f5b] bg-[#173425] px-4 text-sm font-medium text-[#9ff1c5] transition hover:border-[#38a56a] hover:bg-[#1d442f] hover:text-white"
+                >
+                  Start
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-[#24242c] bg-[#0f0f12]/85 backdrop-blur-xl">
       <div className="flex items-center justify-between border-b border-[#222228] px-4 py-3">
@@ -21,7 +66,7 @@ export default function AgentGrid({ agents, selectedAgentId, onSelect, onConfigu
             OpenFang Hands
           </p>
         </div>
-        <span className="text-xs text-gray-500">8 agents</span>
+        <span className="text-xs text-gray-500">{agents.length} agents</span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 p-3">
@@ -46,7 +91,7 @@ export default function AgentGrid({ agents, selectedAgentId, onSelect, onConfigu
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  onConfigure(agent);
+                  onConfigure?.(agent);
                 }}
                 className="absolute right-2 top-2 z-20 rounded-md border border-[#30303a] bg-[#0f0f12] px-2 py-1 text-[10px] font-medium text-gray-300 hover:border-[#4a4a54] hover:text-white"
               >

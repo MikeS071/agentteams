@@ -239,6 +239,7 @@ export default function ChatPage() {
   const endRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedAgent, setSelectedAgent] = useState<AgentType>(getAgent("chat"));
+  const [activeMode, setActiveMode] = useState<AgentType | null>(null);
   const [wizardAgent, setWizardAgent] = useState<AgentType | null>(null);
   const [agentConfigs, setAgentConfigs] = useState<AgentConfigMap>(defaultConfigs);
   const [modelSelections, setModelSelections] = useState<Record<string, string>>({});
@@ -316,6 +317,13 @@ export default function ChatPage() {
       void loadHistory(activeConversationId);
     }
   }, [activeConversationId, loadHistory]);
+
+  useEffect(() => {
+    if (!activeConversationId) {
+      return;
+    }
+    setActiveMode((prev) => prev ?? selectedAgent);
+  }, [activeConversationId, selectedAgent]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -712,12 +720,21 @@ export default function ChatPage() {
 
   function handleAgentSelect(agent: AgentType) {
     setSelectedAgent(agent);
+    setActiveMode(agent);
     setSidebarOpen(false);
   }
 
   function handleAgentConfigOpen(agent: AgentType) {
     setSelectedAgent(agent);
+    setActiveMode(agent);
     setWizardAgent(agent);
+  }
+
+  function handleAgentStart(agent: AgentType) {
+    setSelectedAgent(agent);
+    setActiveMode(agent);
+    setSidebarOpen(false);
+    setWizardAgent(null);
   }
 
   function handleAgentConfigSave(config: AgentWizardConfig) {
@@ -737,6 +754,8 @@ export default function ChatPage() {
     setMessages([]);
     setError(null);
     setWizardAgent(null);
+    setActiveMode(null);
+    setSidebarOpen(false);
     router.replace("/dashboard/chat");
   }
 
@@ -759,8 +778,28 @@ export default function ChatPage() {
     return ensureSuggestions(lastAssistantMessage.suggestions, lastAssistantMessage.content);
   }, [lastAssistantMessage, replyLoading]);
 
+  if (activeMode === null) {
+    return (
+      <div className="relative flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0f]">
+        <section className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 py-8 sm:px-6">
+          <div className="w-full max-w-6xl">
+            <h1 className="mb-6 text-center text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+              Choose an AI Agent to get started
+            </h1>
+            <AgentGrid
+              agents={orderedAgents}
+              selectedAgentId={null}
+              onSelect={handleAgentStart}
+              variant="hero"
+            />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0b]">
+    <div className="relative flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0f]">
       {sidebarOpen && (
         <button
           type="button"
