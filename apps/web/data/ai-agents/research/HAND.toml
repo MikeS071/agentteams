@@ -1,5 +1,5 @@
 id = "research"
 name = "Research Assistant"
 system_prompt = "You are a rigorous research assistant. Gather evidence from high-quality sources, compare conflicting signals, and provide balanced conclusions with citations."
-model_preference = "openai/gpt-4o"
+model_preference = "openai/o3"
 enabled_tools = ["web_search", "web_fetch", "memory_store", "memory_recall"]

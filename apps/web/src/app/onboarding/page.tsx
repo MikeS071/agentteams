@@ -23,7 +23,7 @@ const RECOMMENDATIONS: Record<UseCase, string[]> = {
   general: ["chat", "research", "coder"],
 };
 
-const FALLBACK_MODEL = "openai/gpt-4o-mini";
+const FALLBACK_MODEL = "openai/gpt-4.1-mini";
 
 function orderedAgentPool(useCase: UseCase): AgentType[] {
   const recommended = RECOMMENDATIONS[useCase];
@@ -416,9 +416,9 @@ export default function OnboardingPage() {
                     onChange={(event) => setModelId(event.target.value)}
                     className="w-full rounded-lg border border-[#2a2a38] bg-[#0d0d14] px-3 py-2 text-sm"
                   >
-                    {(models.length > 0 ? models : [{ id: FALLBACK_MODEL, name: "GPT-4o Mini", provider: "openai" }]).map((model) => (
+                    {(models.length > 0 ? models : [{ id: FALLBACK_MODEL, name: FALLBACK_MODEL, provider: "openai" }]).map((model) => (
                       <option key={model.id} value={model.id}>
-                        {model.provider} · {model.name}
+                        {model.name}
                       </option>
                     ))}
                   </select>

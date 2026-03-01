@@ -15,15 +15,15 @@ import (
 
 // Message is an OpenAI-format message for the tool loop.
 type Message struct {
-	Role       string          `json:"role"`
-	Content    any             `json:"content,omitempty"`
-	ToolCalls  []ToolCall      `json:"tool_calls,omitempty"`
-	ToolCallID string          `json:"tool_call_id,omitempty"`
+	Role       string     `json:"role"`
+	Content    any        `json:"content,omitempty"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
 }
 
 // LoopConfig controls the tool-calling loop behavior.
 type LoopConfig struct {
-	LLMProxyURL   string  // unused now, kept for interface compat
+	LLMProxyURL   string // unused now, kept for interface compat
 	Model         string
 	TenantID      string
 	ServiceAPIKey string
@@ -155,14 +155,22 @@ func RunToolLoop(ctx context.Context, reg *Registry, cfg LoopConfig, messages []
 }
 
 func mapModel(model string) string {
-	// Map internal model names to OpenAI API model names
+	// Map provider/model identifiers to OpenAI model names.
 	switch {
-	case strings.Contains(model, "gpt-4o-mini"):
-		return "gpt-4o-mini"
-	case strings.Contains(model, "gpt-4o"):
-		return "gpt-4o"
+	case strings.Contains(model, "gpt-5.3-codex"):
+		return "gpt-5.3-codex"
+	case strings.Contains(model, "o4-mini"):
+		return "o4-mini"
+	case strings.Contains(model, "o3"):
+		return "o3"
+	case strings.Contains(model, "gpt-4.1-mini"):
+		return "gpt-4.1-mini"
+	case strings.Contains(model, "gpt-4.1-nano"):
+		return "gpt-4.1-nano"
+	case strings.Contains(model, "gpt-4.1"):
+		return "gpt-4.1"
 	default:
-		return "gpt-4o" // Default to gpt-4o for tool calling
+		return "gpt-4.1-mini"
 	}
 }
 

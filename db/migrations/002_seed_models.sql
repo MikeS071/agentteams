@@ -1,6 +1,15 @@
 INSERT INTO models (id, name, provider, provider_cost_input_per_m, provider_cost_output_per_m, markup_pct, enabled) VALUES
-  ('gpt-4o', 'GPT-4o', 'openai', 250, 1000, 30, true),
-  ('gpt-4o-mini', 'GPT-4o Mini', 'openai', 15, 60, 40, true),
-  ('claude-sonnet-4', 'Claude Sonnet 4', 'anthropic', 300, 1500, 30, true),
-  ('claude-opus-4', 'Claude Opus 4', 'anthropic', 1500, 7500, 25, true),
-  ('gemini-2.0-flash', 'Gemini 2.0 Flash', 'google', 10, 40, 40, true);
+  ('anthropic/claude-opus-4-6', 'anthropic/claude-opus-4-6', 'anthropic', 1500, 7500, 25, true),
+  ('anthropic/claude-sonnet-4-6', 'anthropic/claude-sonnet-4-6', 'anthropic', 300, 1500, 30, true),
+  ('anthropic/claude-haiku-3.5', 'anthropic/claude-haiku-3.5', 'anthropic', 80, 400, 35, true),
+  ('openai/gpt-4.1', 'openai/gpt-4.1', 'openai', 200, 800, 30, true),
+  ('openai/gpt-4.1-mini', 'openai/gpt-4.1-mini', 'openai', 40, 160, 35, true),
+  ('openai/gpt-4.1-nano', 'openai/gpt-4.1-nano', 'openai', 10, 40, 40, true),
+  ('openai/o3', 'openai/o3', 'openai', 400, 1600, 20, true),
+  ('openai/o4-mini', 'openai/o4-mini', 'openai', 110, 440, 30, true),
+  ('openai/gpt-5.3-codex', 'openai/gpt-5.3-codex', 'openai', 300, 1200, 20, true),
+  ('openai/gpt-image-1', 'openai/gpt-image-1', 'openai', 500, 500, 25, true),
+  ('google/gemini-2.5-pro', 'google/gemini-2.5-pro', 'google', 125, 500, 30, true),
+  ('google/gemini-2.5-flash', 'google/gemini-2.5-flash', 'google', 30, 120, 35, true),
+  ('meta/llama-4-maverick', 'meta/llama-4-maverick', 'meta', 25, 100, 40, true),
+  ('meta/llama-4-scout', 'meta/llama-4-scout', 'meta', 15, 60, 40, true);

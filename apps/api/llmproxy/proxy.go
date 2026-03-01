@@ -68,8 +68,6 @@ type chatChoice struct {
 	FinishReason string      `json:"finish_reason"`
 }
 
-
-
 type usageInfo struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
@@ -120,6 +118,12 @@ func (p *Proxy) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	upstreamModel := resolveProviderModelID(model)
+	if upstreamModel == "" {
+		writeError(w, http.StatusBadRequest, "invalid model id: "+model.ID)
+		return
+	}
+	req.Model = upstreamModel
 
 	// Credit check
 	balance, err := CheckCredits(p.DB, tenantID)
@@ -419,4 +423,28 @@ func decodeJSONStrict(r *http.Request, dst any) error {
 		return errors.New("request body must contain a single JSON object")
 	}
 	return nil
+}
+
+func resolveProviderModelID(model *Model) string {
+	candidate := strings.TrimSpace(model.ID)
+	if candidate == "" {
+		candidate = strings.TrimSpace(model.Name)
+	}
+	if candidate == "" {
+		return ""
+	}
+
+	provider := strings.TrimSpace(model.Provider)
+	if provider != "" {
+		prefix := provider + "/"
+		if strings.HasPrefix(candidate, prefix) {
+			return strings.TrimPrefix(candidate, prefix)
+		}
+	}
+
+	if idx := strings.Index(candidate, "/"); idx > 0 && idx < len(candidate)-1 {
+		return candidate[idx+1:]
+	}
+
+	return candidate
 }

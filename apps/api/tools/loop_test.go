@@ -54,7 +54,7 @@ func TestRunToolLoop(t *testing.T) {
 			t.Cleanup(func() { _ = os.Unsetenv("OPENAI_API_KEY") })
 
 			reg := NewRegistry()
-			cfg := LoopConfig{Model: "gpt-4o", TenantID: "t1", HTTPClient: &http.Client{Transport: tt.transport}, MaxIterations: 2}
+			cfg := LoopConfig{Model: "openai/gpt-4.1-mini", TenantID: "t1", HTTPClient: &http.Client{Transport: tt.transport}, MaxIterations: 2}
 			if tt.transport == nil {
 				cfg.HTTPClient = &http.Client{}
 			}
@@ -71,10 +71,10 @@ func TestRunToolLoop(t *testing.T) {
 
 func TestMapModelAndTruncate(t *testing.T) {
 	t.Parallel()
-	if got := mapModel("foo-gpt-4o-mini"); got != "gpt-4o-mini" {
+	if got := mapModel("openai/gpt-4.1-mini"); got != "gpt-4.1-mini" {
 		t.Fatalf("mapModel mini = %s", got)
 	}
-	if got := mapModel("unknown"); got != "gpt-4o" {
+	if got := mapModel("unknown"); got != "gpt-4.1-mini" {
 		t.Fatalf("mapModel default = %s", got)
 	}
 	if got := truncate("abcdef", 3); got != "abc..." {

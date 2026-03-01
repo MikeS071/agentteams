@@ -11,7 +11,7 @@ export type HandConfig = {
 
 type RawValue = string | string[];
 
-const DEFAULT_MODEL = "openai/gpt-4o-mini";
+const DEFAULT_MODEL = "openai/gpt-4.1-mini";
 const DEFAULT_TOOLS = ["web_search", "web_fetch"];
 
 let cachedConfigs: Record<string, HandConfig> | null = null;
