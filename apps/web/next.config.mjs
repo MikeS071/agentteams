@@ -22,7 +22,6 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  distDir: ".next-build",
   async rewrites() {
     return [
       { source: "/", destination: "/landing.html" },
