@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { checkRateLimit, getClientIP, rateLimitExceededResponse } from "@/lib/rate-limit";
 
+const E2E_TEST_MODE = process.env.E2E_TEST_MODE === "1";
+
 function isPublicPath(pathname: string): boolean {
   return (
     pathname === "/" ||
@@ -66,6 +68,10 @@ function applyRateLimit(request: NextRequest, userId?: string | null): NextRespo
 
 export default withAuth(
   function middleware(request) {
+    if (E2E_TEST_MODE) {
+      return NextResponse.next();
+    }
+
     const pathname = request.nextUrl.pathname;
     const userId =
       typeof request.nextauth.token?.userId === "string"
@@ -102,6 +108,9 @@ export default withAuth(
     pages: { signIn: "/login" },
     callbacks: {
       authorized: ({ req, token }) => {
+        if (E2E_TEST_MODE) {
+          return true;
+        }
         if (isPublicPath(req.nextUrl.pathname)) {
           return true;
         }
