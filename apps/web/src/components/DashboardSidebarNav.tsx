@@ -91,8 +91,8 @@ export default function DashboardSidebarNav({
     const active = enabled && activeHref === item.href;
     const iconClass = active ? "h-5 w-5 text-[#a29bfe]" : "h-5 w-5 text-gray-400";
     const labelClass = active
-      ? "max-w-full truncate text-[10px] leading-tight text-[#a29bfe]"
-      : "max-w-full truncate text-[10px] leading-tight text-gray-500";
+      ? "text-center text-[11px] leading-tight text-[#a29bfe]"
+      : "text-center text-[11px] leading-tight text-gray-500";
 
     if (enabled) {
       return (
@@ -102,7 +102,7 @@ export default function DashboardSidebarNav({
           title={item.label}
           onClick={onNavigate}
           className={[
-            "relative flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-lg p-2 transition-colors hover:bg-[#131320]",
+            "relative flex h-14 w-16 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-colors hover:bg-[#131320]",
             active ? "bg-[#131320] ring-1 ring-inset ring-[#a29bfe]" : "",
           ]
             .filter(Boolean)
@@ -123,10 +123,10 @@ export default function DashboardSidebarNav({
       <span
         key={item.href}
         title={`${item.label} (Locked)`}
-        className="relative flex h-12 w-12 cursor-not-allowed flex-col items-center justify-center gap-0.5 rounded-lg p-2 opacity-70"
+        className="relative flex h-14 w-16 cursor-not-allowed flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 opacity-70"
       >
         <Icon aria-hidden="true" className="h-5 w-5 text-gray-500" />
-        <span className="max-w-full truncate text-[10px] leading-tight text-gray-600">{item.label}</span>
+        <span className="text-center text-[11px] leading-tight text-gray-600">{item.label}</span>
         <Lock aria-hidden="true" className="absolute right-0 top-0 h-3 w-3 text-gray-500" />
       </span>
     );
