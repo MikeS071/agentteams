@@ -1,0 +1,116 @@
+{
+  "project": "agentsquads",
+  "tickets": {
+    "as-01": {
+      "status": "todo",
+      "phase": 1,
+      "depends": [],
+      "branch": "feat/as-01",
+      "desc": "Rename OpenFang Hands to AI Agents everywhere"
+    },
+    "as-02": {
+      "status": "todo",
+      "phase": 1,
+      "depends": [],
+      "branch": "feat/as-02",
+      "desc": "Remove Lead Generator and Browser Agent"
+    },
+    "as-03": {
+      "status": "todo",
+      "phase": 1,
+      "depends": [],
+      "branch": "feat/as-03",
+      "desc": "Remove Conversations sidebar panel + move New button"
+    },
+    "as-04": {
+      "status": "todo",
+      "phase": 2,
+      "depends": [
+        "as-01",
+        "as-02",
+        "as-03"
+      ],
+      "branch": "feat/as-04",
+      "desc": "Agent mode selection \u2014 tile click enters agent mode"
+    },
+    "as-05": {
+      "status": "todo",
+      "phase": 2,
+      "depends": [
+        "as-01",
+        "as-02",
+        "as-03"
+      ],
+      "branch": "feat/as-05",
+      "desc": "Agent panel move to top full height"
+    },
+    "as-06": {
+      "status": "todo",
+      "phase": 3,
+      "depends": [
+        "as-04"
+      ],
+      "branch": "feat/as-06",
+      "desc": "Research Assistant split UI \u2014 Chat + Research panel"
+    },
+    "as-07": {
+      "status": "todo",
+      "phase": 3,
+      "depends": [
+        "as-04"
+      ],
+      "branch": "feat/as-07",
+      "desc": "Coder \u2014 full Chat UI mode"
+    },
+    "as-08": {
+      "status": "todo",
+      "phase": 3,
+      "depends": [
+        "as-04"
+      ],
+      "branch": "feat/as-08",
+      "desc": "Intelligence Collector \u2014 Chat + Intel panel"
+    },
+    "as-09": {
+      "status": "todo",
+      "phase": 3,
+      "depends": [
+        "as-04"
+      ],
+      "branch": "feat/as-09",
+      "desc": "Social Manager \u2014 Chat + Calendar/ContentAI panel"
+    },
+    "as-10": {
+      "status": "todo",
+      "phase": 3,
+      "depends": [
+        "as-04"
+      ],
+      "branch": "feat/as-10",
+      "desc": "Clip Creator \u2014 Chat + Media panel"
+    },
+    "as-11": {
+      "status": "todo",
+      "phase": 3,
+      "depends": [
+        "as-04"
+      ],
+      "branch": "feat/as-11",
+      "desc": "General Chat \u2014 standard Chat UI"
+    },
+    "as-12": {
+      "status": "todo",
+      "phase": 4,
+      "depends": [
+        "as-06",
+        "as-07",
+        "as-08",
+        "as-09",
+        "as-10",
+        "as-11"
+      ],
+      "branch": "feat/as-12",
+      "desc": "Integration pass \u2014 verify all agent modes + responsive"
+    }
+  }
+}
