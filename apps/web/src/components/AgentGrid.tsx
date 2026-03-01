@@ -87,21 +87,23 @@ export default function AgentGrid({
                 onClick={() => onSelect(agent)}
                 className="absolute inset-0 z-0 rounded-2xl"
               />
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onConfigure?.(agent);
-                }}
-                className="absolute right-2 top-2 z-20 rounded-md border border-[#30303a] bg-[#0f0f12] px-2 py-1 text-[10px] font-medium text-gray-300 hover:border-[#4a4a54] hover:text-white"
-              >
-                Config
-              </button>
+              {onConfigure && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onConfigure(agent);
+                  }}
+                  className="absolute right-2 top-2 z-20 rounded-md border border-[#30303a] bg-[#0f0f12] px-2 py-1 text-[10px] font-medium text-gray-300 hover:border-[#4a4a54] hover:text-white"
+                >
+                  Config
+                </button>
+              )}
 
               <div className="relative z-10 flex h-full flex-col pointer-events-none">
                 <div className="mb-2 text-2xl">{agent.icon}</div>
                 <p className="text-sm font-semibold text-gray-100">{agent.name}</p>
-                
+
                 <div className="mt-auto flex items-center justify-between pt-2">
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
