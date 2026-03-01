@@ -19,7 +19,7 @@ const USE_CASES: Array<{ id: UseCase; label: string; description: string }> = [
 const RECOMMENDATIONS: Record<UseCase, string[]> = {
   research: ["research", "intel", "chat"],
   coding: ["coder", "research", "chat"],
-  marketing: ["leadgen", "social", "intel"],
+  marketing: ["social", "intel", "chat"],
   general: ["chat", "research", "coder"],
 };
 

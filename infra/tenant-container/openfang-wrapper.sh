@@ -40,7 +40,6 @@ NAME         DESCRIPTION
 clip         Clip Hand
 lead         Lead Hand
 collector    Collector Hand
-predictor    Predictor Hand
 researcher   Researcher Hand
 twitter      Twitter Hand
 browser      Browser Hand

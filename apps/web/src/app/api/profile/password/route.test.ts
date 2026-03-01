@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
-import { describe, expect, it, vi } from 'vitest'
-import { mockDbQuery, mockValidationFail, mockValidationSuccess, setSession } from '@/test/mocks'
+import { describe, expect, it } from 'vitest'
+import { mockBcryptCompare, mockDbQuery, mockValidationFail, mockValidationSuccess, setSession } from '@/test/mocks'
 
 async function loadRoute() {
   return import('./route')
@@ -29,8 +29,7 @@ describe('api/profile/password', () => {
     setSession({ id: 'user-1' })
     mockValidationSuccess({ currentPassword: 'oldpassword', newPassword: 'newpassword' })
     mockDbQuery.mockResolvedValueOnce({ rows: [{ password_hash: 'hash' }] })
-    const bcrypt = await import('bcryptjs')
-    vi.mocked(bcrypt.compare).mockResolvedValueOnce(false)
+    mockBcryptCompare.mockResolvedValueOnce(false)
 
     const res = await POST(new NextRequest('http://localhost:3000/api/profile/password', { method: 'POST' }))
     expect(res.status).toBe(400)

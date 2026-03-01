@@ -79,7 +79,7 @@ export async function loadHandConfigs(): Promise<Record<string, HandConfig>> {
     return cachedConfigs;
   }
 
-  const baseDir = path.join(process.cwd(), "data", "hands");
+  const baseDir = path.join(process.cwd(), "data", "ai-agents");
   const result: Record<string, HandConfig> = {};
 
   try {
