@@ -29,7 +29,8 @@
         "as-01",
         "as-02",
         "as-03",
-        "as-13"
+        "as-13",
+        "as-15"
       ],
       "branch": "feat/as-04",
       "desc": "Agent mode selection \u2014 tile click enters agent mode"
@@ -41,7 +42,8 @@
         "as-01",
         "as-02",
         "as-03",
-        "as-13"
+        "as-13",
+        "as-15"
       ],
       "branch": "feat/as-05",
       "desc": "Agent panel move to top full height"
@@ -127,6 +129,26 @@
       "depends": [],
       "branch": "feat/as-14",
       "desc": "Sidebar redesign \u2014 narrow tile icons with labels"
+    },
+    "as-15": {
+      "status": "todo",
+      "phase": 1,
+      "depends": [],
+      "branch": "feat/as-15",
+      "desc": "Remove Hands dashboard page and nav entry"
+    },
+    "as-16": {
+      "status": "todo",
+      "phase": 2,
+      "depends": [
+        "as-01",
+        "as-02",
+        "as-03",
+        "as-13",
+        "as-15"
+      ],
+      "branch": "feat/as-16",
+      "desc": "Swarm status TUI rendered in chat side panel + Swarm workspace tab"
     }
   }
 }
