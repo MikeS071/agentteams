@@ -117,7 +117,7 @@ export default function HandsOverviewPage() {
           <div className="rounded-xl border border-[#232336] bg-[#101019] p-4">
             <p className="text-xs uppercase tracking-wide text-gray-500">Enabled Hands</p>
             <p className="mt-2 text-2xl font-semibold text-white">
-              {quickStats.enabled} / {hands.length || 8}
+              {quickStats.enabled} / {hands.length || 7}
             </p>
           </div>
         </div>
