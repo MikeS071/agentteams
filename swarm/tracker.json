@@ -2,28 +2,34 @@
   "project": "agentsquads",
   "tickets": {
     "as-01": {
-      "status": "todo",
+      "status": "done",
       "phase": 1,
       "depends": [],
       "branch": "feat/as-01",
-      "desc": "Rename OpenFang Hands to AI Agents everywhere"
+      "desc": "Rename OpenFang Hands to AI Agents everywhere",
+      "sha": "ba8fa69",
+      "startedAt": "2026-03-01T07:20:10Z"
     },
     "as-02": {
-      "status": "todo",
+      "status": "done",
       "phase": 1,
       "depends": [],
       "branch": "feat/as-02",
-      "desc": "Remove Lead Generator and Browser Agent"
+      "desc": "Remove Lead Generator and Browser Agent",
+      "sha": "52d6d45",
+      "startedAt": "2026-03-01T07:20:11Z"
     },
     "as-03": {
-      "status": "todo",
+      "status": "done",
       "phase": 1,
       "depends": [],
       "branch": "feat/as-03",
-      "desc": "Remove Conversations sidebar panel + move New button"
+      "desc": "Remove Conversations sidebar panel + move New button",
+      "sha": "d7de7ac",
+      "startedAt": "2026-03-01T07:20:12Z"
     },
     "as-04": {
-      "status": "todo",
+      "status": "done",
       "phase": 2,
       "depends": [
         "as-01",
@@ -33,10 +39,12 @@
         "as-15"
       ],
       "branch": "feat/as-04",
-      "desc": "Agent mode selection \u2014 tile click enters agent mode"
+      "desc": "Agent mode selection \u2014 tile click enters agent mode",
+      "sha": "22f688f",
+      "startedAt": "2026-03-01T07:30:29Z"
     },
     "as-05": {
-      "status": "todo",
+      "status": "done",
       "phase": 2,
       "depends": [
         "as-01",
@@ -46,99 +54,115 @@
         "as-15"
       ],
       "branch": "feat/as-05",
-      "desc": "Agent panel move to top full height"
+      "desc": "Agent panel move to top full height",
+      "sha": "49be343",
+      "startedAt": "2026-03-01T07:30:29Z"
     },
     "as-06": {
-      "status": "todo",
+      "status": "done",
       "phase": 3,
       "depends": [
         "as-04"
       ],
       "branch": "feat/as-06",
-      "desc": "Research Assistant split UI \u2014 Chat + Research panel"
+      "desc": "Research Assistant split UI \u2014 Chat + Research panel",
+      "sha": "0356516",
+      "startedAt": "2026-03-01T07:43:08Z"
     },
     "as-07": {
-      "status": "todo",
+      "status": "done",
       "phase": 3,
       "depends": [
         "as-04"
       ],
       "branch": "feat/as-07",
-      "desc": "Coder \u2014 full Chat UI mode"
+      "desc": "Coder \u2014 full Chat UI mode",
+      "sha": "ce135e0",
+      "startedAt": "2026-03-01T07:43:08Z"
     },
     "as-08": {
-      "status": "todo",
+      "status": "done",
       "phase": 3,
       "depends": [
         "as-04"
       ],
       "branch": "feat/as-08",
-      "desc": "Intelligence Collector \u2014 Chat + Intel panel"
+      "desc": "Intelligence Collector \u2014 Chat + Intel panel",
+      "sha": "5826638",
+      "startedAt": "2026-03-01T07:43:09Z"
     },
     "as-09": {
-      "status": "todo",
+      "status": "done",
       "phase": 3,
       "depends": [
         "as-04"
       ],
       "branch": "feat/as-09",
-      "desc": "Social Manager \u2014 Chat + Calendar/ContentAI panel"
+      "desc": "Social Manager \u2014 Chat + Calendar/ContentAI panel",
+      "sha": "0bc801b",
+      "startedAt": "2026-03-01T07:50:44Z"
     },
     "as-10": {
-      "status": "todo",
+      "status": "done",
       "phase": 3,
       "depends": [
         "as-04"
       ],
       "branch": "feat/as-10",
-      "desc": "Clip Creator \u2014 Chat + Media panel"
+      "desc": "Clip Creator \u2014 Chat + Media panel",
+      "sha": "804a336",
+      "startedAt": "2026-03-01T07:51:45Z"
     },
     "as-11": {
-      "status": "todo",
+      "status": "done",
       "phase": 3,
       "depends": [
         "as-04"
       ],
       "branch": "feat/as-11",
-      "desc": "General Chat \u2014 standard Chat UI"
+      "desc": "General Chat \u2014 standard Chat UI",
+      "sha": "0ec1933",
+      "startedAt": "2026-03-01T07:52:46Z"
     },
     "as-12": {
-      "status": "todo",
+      "status": "running",
       "phase": 4,
       "depends": [
-        "as-06",
-        "as-07",
-        "as-08",
-        "as-09",
-        "as-10",
-        "as-11"
+        "as-17"
       ],
       "branch": "feat/as-12",
-      "desc": "Integration pass \u2014 verify all agent modes + responsive"
+      "desc": "Integration pass \u2014 verify all agent modes + responsive",
+      "startedAt": "2026-03-01T08:00:50Z"
     },
     "as-13": {
-      "status": "todo",
+      "status": "done",
       "phase": 1,
       "depends": [],
       "branch": "feat/as-13",
-      "desc": "Remove Predictor agent"
+      "desc": "Remove Predictor agent",
+      "sha": "476ca61",
+      "startedAt": "2026-03-01T07:23:26Z"
     },
     "as-14": {
-      "status": "todo",
+      "status": "done",
       "phase": 1,
       "depends": [],
       "branch": "feat/as-14",
-      "desc": "Sidebar redesign \u2014 narrow tile icons with labels"
+      "desc": "Sidebar redesign \u2014 narrow tile icons with labels",
+      "sha": "b5154e6",
+      "startedAt": "2026-03-01T07:24:56Z"
     },
     "as-15": {
-      "status": "todo",
+      "status": "done",
       "phase": 1,
       "depends": [],
       "branch": "feat/as-15",
-      "desc": "Remove Hands dashboard page and nav entry"
+      "desc": "Remove Hands dashboard page and nav entry",
+      "sha": "b9d250d",
+      "startedAt": "2026-03-01T07:28:28Z"
     },
     "as-16": {
-      "status": "todo",
+      "status": "done",
       "phase": 2,
       "depends": [
         "as-01",
@@ -148,7 +172,43 @@
         "as-15"
       ],
       "branch": "feat/as-16",
-      "desc": "Swarm status TUI rendered in chat side panel + Swarm workspace tab"
+      "desc": "Swarm status TUI rendered in chat side panel + Swarm workspace tab",
+      "sha": "9f5f7f6",
+      "startedAt": "2026-03-01T07:30:30Z"
+    },
+    "as-17": {
+      "status": "todo",
+      "phase": 4,
+      "depends": [
+        "as-06",
+        "as-07",
+        "as-08",
+        "as-09",
+        "as-10",
+        "as-11",
+        "as-16"
+      ],
+      "branch": "feat/as-17",
+      "desc": "Integration merge \u2014 merge all branches into main + resolve conflicts"
+    },
+    "as-18": {
+      "status": "todo",
+      "phase": 4,
+      "depends": [
+        "as-17"
+      ],
+      "branch": "feat/as-18",
+      "desc": "Comprehensive E2E test suite for all agent modes + UI flows"
+    },
+    "as-19": {
+      "status": "todo",
+      "phase": 4,
+      "depends": [
+        "as-18"
+      ],
+      "branch": "feat/as-19",
+      "desc": "Update user and technical documentation"
     }
-  }
+  },
+  "unlocked_phase": 4
 }
