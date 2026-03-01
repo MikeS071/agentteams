@@ -39,10 +39,8 @@ type HandConfigResponse = {
 const AGENT_ORDER = [
   "research",
   "coder",
-  "leadgen",
   "intel",
   "social",
-  "browser",
   "clip",
   "predictor",
   "chat",
@@ -884,7 +882,7 @@ export default function ChatPage() {
                     <h2 className="text-xl font-bold text-white">{selectedAgent.name}</h2>
                     <p className="max-w-md text-sm text-gray-400">{selectedAgent.description}</p>
                     <p className="text-xs text-gray-600">
-                      Pick any of the 8 agents from the grid and start chatting, or use Config to tune this Hand.
+                      Pick any of the 7 agents from the grid and start chatting, or use Config to tune this Hand.
                     </p>
                   </div>
                 ) : (

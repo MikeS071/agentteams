@@ -163,45 +163,6 @@ After delivering the report, end with a follow-up menu:
     ],
   },
   {
-    id: "leadgen",
-    name: "Lead Generator",
-    icon: "🎯",
-    image: "/images/leadgen.png",
-    description: "Find and qualify prospects matching your ICP",
-    systemPrompt: `You are a B2B lead generation specialist with expertise in ICP definition, prospect research, and lead scoring.
-
-## Your process:
-1. **Parse ICP** — Extract: industry, company size, role/title, geography, budget signals, disqualifiers.
-2. **Research** — Find companies and contacts matching the ICP. Use publicly available data.
-3. **Enrich** — For each lead: company name, size, funding stage, key person, title, LinkedIn URL if findable, relevance score.
-4. **Score** — Rate 0-100 based on ICP fit. Explain scoring criteria used.
-5. **Deliver** — Structured table with leads, sorted by score descending.
-
-## Output format:
-| # | Company | Size | Person | Title | Score | Why |
-Each lead gets a 1-line justification for the score.
-
-## Rules:
-- Start generating leads immediately from the ICP provided. Don't re-ask what was already stated.
-- If the ICP is vague on ONE critical dimension, ask that one thing.
-- Deliver at least the requested count. Quality > quantity — don't pad with poor fits.
-- Flag any leads you're uncertain about with a confidence indicator.
-- End with: "Want me to dig deeper on any of these, or refine the ICP?"`,
-    welcomeMessage: "Generating leads now...",
-    buildFirstMessage: (v) => {
-      let msg = `Find qualified leads matching this ICP:\n\n**Ideal Customer Profile:** ${v.icp}`;
-      if (v.industry) msg += `\n**Target industry:** ${v.industry}`;
-      if (v.count) msg += `\n**Number of leads:** ${v.count}`;
-      msg += `\n\nStart researching and deliver a scored lead table immediately. Don't ask preliminary questions — use the ICP as provided.`;
-      return msg;
-    },
-    fields: [
-      { id: "icp", label: "Ideal Customer Profile", placeholder: "e.g. B2B SaaS CTOs/VPs Engineering, 50-500 employees, Series A-C, US/EU, building with AI", type: "textarea", required: true },
-      { id: "industry", label: "Target Industry (optional)", placeholder: "e.g. FinTech, Developer Tools, AI/ML platforms", type: "text", required: false },
-      { id: "count", label: "How many leads?", placeholder: "How many?", type: "select", required: false, options: ["10 leads", "25 leads", "50 leads", "100 leads"] },
-    ],
-  },
-  {
     id: "intel",
     name: "Intelligence Collector",
     icon: "🕵️",
@@ -280,37 +241,6 @@ Each lead gets a 1-line justification for the score.
       { id: "platform", label: "Platform", placeholder: "Which platform?", type: "select", required: true, options: ["X / Twitter", "LinkedIn", "Both"] },
       { id: "goal", label: "Content Goal", placeholder: "e.g. Build thought leadership in AI engineering, share build-in-public updates, drive signups", type: "textarea", required: true },
       { id: "voice", label: "Brand Voice (optional)", placeholder: "e.g. Technical but approachable, no corporate speak, share real numbers", type: "text", required: false },
-    ],
-  },
-  {
-    id: "browser",
-    name: "Browser Agent",
-    icon: "🌐",
-    image: "/images/browser.png",
-    description: "Web automation, form filling, multi-step workflows",
-    systemPrompt: `You are a browser automation agent. You plan and execute web-based tasks step by step.
-
-## Your process:
-1. **Plan** — Break the task into numbered steps. State what you'll do at each URL.
-2. **Execute** — Describe each action: navigate, click, fill, extract, verify.
-3. **Report** — Summarize what was done, what data was extracted, and any issues.
-
-## Rules:
-- Start planning and executing immediately. Don't ask "are you sure?" — the user asked you to do it.
-- For ANY action involving payments, account deletion, or sensitive data: STOP and ask for explicit confirmation before proceeding.
-- Describe each step as you do it so the user can follow along.
-- If a page loads differently than expected, describe what you see and ask how to proceed.
-- Extract and present any relevant data in structured format.`,
-    welcomeMessage: "Planning the web task now...",
-    buildFirstMessage: (v) => {
-      let msg = `Execute this web task:\n\n**Task:** ${v.task}`;
-      if (v.url) msg += `\n**Starting URL:** ${v.url}`;
-      msg += `\n\nPlan the steps and start executing. Only pause for confirmation on payment or destructive actions.`;
-      return msg;
-    },
-    fields: [
-      { id: "task", label: "Web Task", placeholder: "e.g. Go to producthunt.com, find the top 10 AI launches this week, extract name + URL + tagline + upvote count", type: "textarea", required: true },
-      { id: "url", label: "Starting URL (optional)", placeholder: "https://...", type: "text", required: false },
     ],
   },
   {

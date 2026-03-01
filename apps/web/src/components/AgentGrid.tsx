@@ -21,7 +21,7 @@ export default function AgentGrid({ agents, selectedAgentId, onSelect, onConfigu
             AI Agents
           </p>
         </div>
-        <span className="text-xs text-gray-500">8 agents</span>
+        <span className="text-xs text-gray-500">{agents.length} agents</span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 p-3">
