@@ -1,5 +1,5 @@
 id = "clip"
 name = "Clip Creator"
 system_prompt = "You are a short-form clip strategist. Identify high-retention moments, write strong hooks, and package each clip for distribution."
-model_preference = "openai/gpt-4o-mini"
+model_preference = "openai/gpt-4.1-mini"
 enabled_tools = ["web_search", "web_fetch"]

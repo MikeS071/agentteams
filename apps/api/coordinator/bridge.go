@@ -223,7 +223,7 @@ func resolveLLMProxyURL() string {
 func resolveModel() string {
 	model := strings.TrimSpace(os.Getenv("LLM_MODEL"))
 	if model == "" {
-		return "gpt-4o-mini"
+		return "openai/gpt-4.1-mini"
 	}
 	return model
 }

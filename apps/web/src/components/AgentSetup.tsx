@@ -20,19 +20,19 @@ const QUICK_TEMPLATES: Record<string, AgentWizardConfig> = {
   "Research Mode": {
     systemPrompt:
       "You are a rigorous research assistant. Prioritize current primary sources, compare conflicting evidence, and present confidence with clear caveats.",
-    modelPreference: "openai/gpt-4o",
+    modelPreference: "openai/o3",
     enabledTools: ["web_search", "web_fetch", "memory_store", "memory_recall"],
   },
   "Code Assistant": {
     systemPrompt:
       "You are a production-minded software engineer. Deliver complete implementations, explicit assumptions, and concise verification steps.",
-    modelPreference: "anthropic/claude-3-5-sonnet",
+    modelPreference: "openai/gpt-5.3-codex",
     enabledTools: ["web_search", "web_fetch"],
   },
   "Social Manager": {
     systemPrompt:
       "You are a social content strategist. Draft high-signal posts with strong hooks, practical insights, and platform-native tone.",
-    modelPreference: "openai/gpt-4o-mini",
+    modelPreference: "openai/gpt-4.1-mini",
     enabledTools: ["web_search", "web_fetch"],
   },
 };
@@ -126,7 +126,7 @@ export default function AgentSetup({ agent, initialConfig, onSave, onBack }: Pro
             type="text"
             value={config.modelPreference}
             onChange={(e) => setConfig((prev) => ({ ...prev, modelPreference: e.target.value }))}
-            placeholder="e.g. openai/gpt-4o-mini"
+            placeholder="e.g. anthropic/claude-opus-4-6"
             className="w-full rounded-xl border border-[#2c2c36] bg-[#111117] px-3 py-2 text-sm text-gray-100 placeholder:text-gray-600 focus:border-[#3b82f6] focus:outline-none"
           />
         </div>

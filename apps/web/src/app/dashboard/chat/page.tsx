@@ -47,7 +47,7 @@ const AGENT_ORDER = ["research", "coder", "intel", "social", "clip", "chat"] as 
 const SELECTED_AGENT_KEY = "openfang:selected-agent";
 const AGENT_CONFIGS_KEY = "openfang:agent-configs-v1";
 const MODEL_SELECTIONS_KEY = "openfang:model-selections-v1";
-const DEFAULT_MODEL = "openai/gpt-4o-mini";
+const DEFAULT_MODEL = "openai/gpt-4.1-mini";
 const DEFAULT_TOOLS = ["web_search", "web_fetch"];
 
 function LoadingDots() {
@@ -275,7 +275,7 @@ export default function ChatPage() {
     if (!found) {
       return activeModelId || currentAgentConfig.modelPreference;
     }
-    return `${found.provider} · ${found.name}`;
+    return found.name;
   }, [activeModelId, currentAgentConfig.modelPreference, models]);
 
   const loadHistory = useCallback(async (id: string) => {
@@ -943,7 +943,7 @@ export default function ChatPage() {
                 >
                   {models.map((model) => (
                     <option key={model.id} value={model.id}>
-                      {model.provider} · {model.name}
+                      {model.name}
                     </option>
                   ))}
                 </select>
