@@ -74,11 +74,12 @@ export default function DashboardSidebarNav({
   className,
 }: DashboardSidebarNavProps) {
   const pathname = usePathname();
+  const currentPath = pathname ?? "";
   const enabledItems = [...navItems, ...settingsItems].filter((item) =>
     isSidebarItemEnabled(item, featureMap)
   );
   const activeHref = enabledItems
-    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .filter((item) => currentPath === item.href || currentPath.startsWith(`${item.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   const wrapperClass = ["flex flex-col items-center gap-2", className].filter(Boolean).join(" ");

@@ -9,13 +9,17 @@ export const mockVerifyMutationOrigin = vi.fn(() => null)
 export const mockBuildServiceHeaders = vi.fn(() => ({ 'X-Service-API-Key': 'test-service-key' }))
 export const mockParseJSONBody = vi.fn()
 export const mockParseWithSchema = vi.fn()
-export const mockCheckFeatureAccess = vi.fn(async () => null)
-export const mockRequireAdminApiSession = vi.fn(async () => ({ session: { user: fixtures.adminUser } }))
+export const mockCheckFeatureAccess = vi.fn(async (): Promise<Response | null> => null)
+export const mockRequireAdminApiSession = vi.fn(async (): Promise<
+  { session: { user: typeof fixtures.adminUser } } | { response: Response }
+> => ({ session: { user: fixtures.adminUser } }))
 export const mockProxyAdminService = vi.fn()
 export const mockStripeConstructEvent = vi.fn()
 export const mockStripeCustomerCreate = vi.fn()
 export const mockStripeCheckoutCreate = vi.fn()
 export const mockEncrypt = vi.fn((input: string) => `enc(${input})`)
+export const mockBcryptHash = vi.fn(async (value: string) => `hash:${value}`)
+export const mockBcryptCompare = vi.fn(async () => true)
 
 vi.mock('next-auth', () => ({
   getServerSession: mockGetServerSession,
@@ -82,8 +86,8 @@ vi.mock('bcryptjs', async () => {
   const actual = await vi.importActual<typeof import('bcryptjs')>('bcryptjs')
   return {
     ...actual,
-    hash: vi.fn(async (value: string) => `hash:${value}`),
-    compare: vi.fn(async () => true),
+    hash: mockBcryptHash,
+    compare: mockBcryptCompare,
   }
 })
 
