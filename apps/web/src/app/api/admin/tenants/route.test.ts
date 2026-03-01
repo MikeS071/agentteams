@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { describe, expect, it } from 'vitest'
+import { NextResponse } from 'next/server'
 import { mockProxyAdminService, mockRequireAdminApiSession } from '@/test/mocks'
 
 async function loadRoute() {
@@ -9,7 +10,7 @@ async function loadRoute() {
 describe('api/admin/tenants', () => {
   it('blocks non-admin users', async () => {
     const { GET } = await loadRoute()
-    mockRequireAdminApiSession.mockResolvedValueOnce({ response: new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'content-type': 'application/json' } }) })
+    mockRequireAdminApiSession.mockResolvedValueOnce({ response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) })
 
     const res = await GET(new NextRequest('http://localhost:3000/api/admin/tenants'))
     expect(res.status).toBe(403)

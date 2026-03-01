@@ -170,7 +170,7 @@ export default function SwarmDashboardPage() {
         <header className="rounded-2xl border border-[#212135] bg-[#0f0f18] p-4">
           <h1 className="text-xl font-semibold text-gray-100">Agent Swarm</h1>
           <p className="mt-1 text-sm text-gray-400">
-            Coordinator-driven tasks with live sub-agent progress and assigned Hands.
+            Coordinator-driven tasks with live sub-agent progress and assigned AI agents.
           </p>
           <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={handleCreateTask}>
             <input

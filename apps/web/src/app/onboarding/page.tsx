@@ -19,7 +19,7 @@ const USE_CASES: Array<{ id: UseCase; label: string; description: string }> = [
 const RECOMMENDATIONS: Record<UseCase, string[]> = {
   research: ["research", "intel", "chat"],
   coding: ["coder", "research", "chat"],
-  marketing: ["leadgen", "social", "intel"],
+  marketing: ["social", "intel", "research"],
   general: ["chat", "research", "coder"],
 };
 
@@ -110,7 +110,7 @@ export default function OnboardingPage() {
       const fallback = selectedAgents[0] ?? recommendedIds[0] ?? "chat";
       setPrimaryAgentId(fallback);
       setSystemPrompt(getAgent(fallback).systemPrompt);
-      setAgentName(`${getAgent(fallback).name} Hand`);
+      setAgentName(`${getAgent(fallback).name} Agent`);
     }
   }, [primaryAgentId, recommendedIds, selectedAgents]);
 
@@ -126,7 +126,7 @@ export default function OnboardingPage() {
       router.push("/dashboard/chat");
     }, 2000);
     return () => window.clearTimeout(timer);
-  }, [router, step]);
+  }, [primaryAgentId, router, step]);
 
   const canContinueFromStep2 = selectedAgents.length >= 1 && selectedAgents.length <= 3;
 
@@ -164,7 +164,7 @@ export default function OnboardingPage() {
     const nextPrimary = nextSelected[0] ?? "chat";
     const nextAgent = getAgent(nextPrimary);
     setPrimaryAgentId(nextPrimary);
-    setAgentName(`${nextAgent.name} Hand`);
+    setAgentName(`${nextAgent.name} Agent`);
     setSystemPrompt(nextAgent.systemPrompt);
   }
 
@@ -274,7 +274,7 @@ export default function OnboardingPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Onboarding</p>
-            <h1 className="mt-1 text-2xl font-semibold">Set up your first Hand</h1>
+            <h1 className="mt-1 text-2xl font-semibold">Set up your first AI Agent</h1>
           </div>
           <button
             type="button"
@@ -384,7 +384,7 @@ export default function OnboardingPage() {
                         const next = getAgent(nextId);
                         setPrimaryAgentId(nextId);
                         setSystemPrompt(next.systemPrompt);
-                        setAgentName(`${next.name} Hand`);
+                        setAgentName(`${next.name} Agent`);
                       }}
                       className="w-full rounded-lg border border-[#2a2a38] bg-[#0d0d14] px-3 py-2 text-sm"
                     >
@@ -399,12 +399,12 @@ export default function OnboardingPage() {
                     </select>
                   </label>
                   <label className="space-y-1">
-                    <span className="text-sm text-gray-300">Hand name</span>
+                    <span className="text-sm text-gray-300">Agent name</span>
                     <input
                       value={agentName}
                       onChange={(event) => setAgentName(event.target.value)}
                       className="w-full rounded-lg border border-[#2a2a38] bg-[#0d0d14] px-3 py-2 text-sm"
-                      placeholder="My Agent Hand"
+                      placeholder="My AI Agent"
                     />
                   </label>
                 </div>

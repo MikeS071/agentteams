@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
-import { vi } from 'vitest'
+import { type MockedFunction, vi } from 'vitest'
 import { fixtures } from './fixtures'
+import type { requireAdminApiSession } from '@/lib/admin'
+import type { checkFeatureAccess } from '@/lib/feature-policies'
 
 export const mockGetServerSession = vi.fn()
 export const mockDbQuery = vi.fn()
@@ -9,8 +11,8 @@ export const mockVerifyMutationOrigin = vi.fn(() => null)
 export const mockBuildServiceHeaders = vi.fn(() => ({ 'X-Service-API-Key': 'test-service-key' }))
 export const mockParseJSONBody = vi.fn()
 export const mockParseWithSchema = vi.fn()
-export const mockCheckFeatureAccess = vi.fn(async () => null)
-export const mockRequireAdminApiSession = vi.fn(async () => ({ session: { user: fixtures.adminUser } }))
+export const mockCheckFeatureAccess: MockedFunction<typeof checkFeatureAccess> = vi.fn(async () => null)
+export const mockRequireAdminApiSession: MockedFunction<typeof requireAdminApiSession> = vi.fn(async () => ({ session: { user: fixtures.adminUser } }))
 export const mockProxyAdminService = vi.fn()
 export const mockStripeConstructEvent = vi.fn()
 export const mockStripeCustomerCreate = vi.fn()

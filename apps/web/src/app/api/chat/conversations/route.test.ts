@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { NextResponse } from 'next/server'
 import { mockCheckFeatureAccess, mockDbQuery, setSession } from '@/test/mocks'
 
 async function loadRoute() {
@@ -17,7 +18,7 @@ describe('api/chat/conversations', () => {
   it('returns forbidden when feature disabled', async () => {
     const { GET } = await loadRoute()
     setSession({ tenantId: 'tenant-1' })
-    mockCheckFeatureAccess.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Feature not available on your plan' }), { status: 403, headers: { 'content-type': 'application/json' } }))
+    mockCheckFeatureAccess.mockResolvedValueOnce(NextResponse.json({ error: 'Feature not available on your plan' }, { status: 403 }))
 
     const res = await GET()
     expect(res.status).toBe(403)

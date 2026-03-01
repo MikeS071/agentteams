@@ -30,7 +30,7 @@ describe('api/profile/password', () => {
     mockValidationSuccess({ currentPassword: 'oldpassword', newPassword: 'newpassword' })
     mockDbQuery.mockResolvedValueOnce({ rows: [{ password_hash: 'hash' }] })
     const bcrypt = await import('bcryptjs')
-    vi.mocked(bcrypt.compare).mockResolvedValueOnce(false)
+    vi.mocked(bcrypt.compare).mockImplementationOnce(async () => false as never)
 
     const res = await POST(new NextRequest('http://localhost:3000/api/profile/password', { method: 'POST' }))
     expect(res.status).toBe(400)
