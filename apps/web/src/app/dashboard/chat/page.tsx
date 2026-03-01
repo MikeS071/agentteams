@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AgentGrid from "@/components/AgentGrid";
+import AgentModeLayout from "@/components/AgentModeLayout";
+import AgentModeSelector from "@/components/AgentModeSelector";
 import AgentSetup, { type AgentWizardConfig } from "@/components/AgentSetup";
 import ChatInput from "@/components/ChatInput";
 import ChatMessage from "@/components/ChatMessage";
@@ -53,6 +55,14 @@ const AGENT_CONFIGS_KEY = "openfang:agent-configs-v1";
 const MODEL_SELECTIONS_KEY = "openfang:model-selections-v1";
 const DEFAULT_MODEL = "openai/gpt-4o-mini";
 const DEFAULT_TOOLS = ["web_search", "web_fetch"];
+const SPLIT_MODE_AGENTS = new Set(["research", "intel", "social", "clip"]);
+
+const MODE_PANEL_META: Record<string, { title: string; subtitle: string }> = {
+  research: { title: "Research Workspace", subtitle: "Source planning and evidence board" },
+  intel: { title: "Intel Workspace", subtitle: "Signals, timelines, and watchlist" },
+  social: { title: "Social Workspace", subtitle: "Content drafts and campaign calendar" },
+  clip: { title: "Clip Workspace", subtitle: "Clip queue and publishing context" },
+};
 
 function LoadingDots() {
   return (
@@ -239,6 +249,7 @@ export default function ChatPage() {
   const endRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedAgent, setSelectedAgent] = useState<AgentType>(getAgent("chat"));
+  const [activeMode, setActiveMode] = useState<string | null>(null);
   const [wizardAgent, setWizardAgent] = useState<AgentType | null>(null);
   const [agentConfigs, setAgentConfigs] = useState<AgentConfigMap>(defaultConfigs);
   const [modelSelections, setModelSelections] = useState<Record<string, string>>({});
@@ -710,9 +721,22 @@ export default function ChatPage() {
     [activeModelId, agentConfigs, conversationId, loadConversations, router, selectedAgent, updateAssistantMessage]
   );
 
-  function handleAgentSelect(agent: AgentType) {
+  function handleAgentModeEnter(agent: AgentType) {
     setSelectedAgent(agent);
+    setActiveMode(agent.id);
     setSidebarOpen(false);
+    setWizardAgent(null);
+  }
+
+  function handleAgentModeSwitch(agent: AgentType) {
+    setSelectedAgent(agent);
+    setActiveMode(agent.id);
+    setWizardAgent(null);
+  }
+
+  function handleExitAgentMode() {
+    setActiveMode(null);
+    setWizardAgent(null);
   }
 
   function handleAgentConfigOpen(agent: AgentType) {
@@ -758,6 +782,152 @@ export default function ChatPage() {
 
     return ensureSuggestions(lastAssistantMessage.suggestions, lastAssistantMessage.content);
   }, [lastAssistantMessage, replyLoading]);
+
+  const inAgentMode = activeMode !== null;
+  const showSplitLayout = inAgentMode && SPLIT_MODE_AGENTS.has(selectedAgent.id);
+  const sidePanelMeta = MODE_PANEL_META[selectedAgent.id];
+  const modeSidePanel = showSplitLayout && sidePanelMeta ? (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#1f2733] bg-[#0d131b]">
+      <div className="border-b border-[#1e2835] px-4 py-3">
+        <p className="text-xs uppercase tracking-[0.12em] text-gray-500">{selectedAgent.name}</p>
+        <h3 className="text-sm font-semibold text-gray-100">{sidePanelMeta.title}</h3>
+        <p className="text-xs text-gray-400">{sidePanelMeta.subtitle}</p>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <div className="space-y-3 rounded-xl border border-[#243140] bg-[#101826] p-3">
+          <p className="text-xs uppercase tracking-wide text-gray-500">Agent Prompt</p>
+          <p className="line-clamp-4 text-sm text-gray-200">{currentAgentConfig.systemPrompt}</p>
+        </div>
+        <div className="mt-3 space-y-2 rounded-xl border border-[#243140] bg-[#101826] p-3">
+          <p className="text-xs uppercase tracking-wide text-gray-500">Enabled Tools</p>
+          <div className="flex flex-wrap gap-2">
+            {currentAgentConfig.enabledTools.length === 0 ? (
+              <span className="text-xs text-gray-400">No tools configured.</span>
+            ) : (
+              currentAgentConfig.enabledTools.map((tool) => (
+                <span
+                  key={tool}
+                  className="rounded-full border border-[#2f8f5b]/40 bg-[#123424] px-2 py-0.5 text-[11px] text-[#b8f7d8]"
+                >
+                  {tool}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : undefined;
+
+  const chatContent = (
+    <>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
+          {historyLoading ? (
+            <p className="text-sm text-gray-400">Loading conversation...</p>
+          ) : !hasChat ? (
+            <div className="flex flex-col items-center justify-center gap-4 pt-20 text-center">
+              <span className="text-5xl">{selectedAgent.icon}</span>
+              <h2 className="text-xl font-bold text-white">{selectedAgent.name}</h2>
+              <p className="max-w-md text-sm text-gray-400">{selectedAgent.description}</p>
+              <p className="text-xs text-gray-600">
+                {inAgentMode
+                  ? "Switch agents from the top strip, or return to the full grid using Back to agents."
+                  : "Pick any of the 8 agents from the grid and start chatting, or use Config to tune this Hand."}
+              </p>
+            </div>
+          ) : (
+            messages.map((message, index) => (
+              <div key={message.id || `${message.role}-${index}-${message.content.slice(0, 20)}`} className="space-y-2">
+                <ChatMessage role={message.role} content={message.content} />
+
+                {message.role === "assistant" && message.tools && message.tools.length > 0 && (
+                  <div className="mr-auto w-full max-w-[92%] space-y-2 sm:max-w-[80%]">
+                    {message.tools.map((tool) => (
+                      <details
+                        key={tool.id}
+                        open={tool.status === "running"}
+                        className="overflow-hidden rounded-lg border border-[#24313a] bg-[#0d1217]"
+                      >
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs text-gray-300">
+                          <span className="inline-flex items-center gap-2">
+                            {tool.status === "running" ? <Spinner /> : <span className="h-2 w-2 rounded-full bg-[#4ade80]" />}
+                            <span className="font-mono">{tool.name}</span>
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                              tool.status === "running"
+                                ? "bg-[#163c2a] text-[#9ff1c5]"
+                                : tool.status === "error"
+                                  ? "bg-[#3b1a1a] text-[#fca5a5]"
+                                  : "bg-[#122736] text-[#93c5fd]"
+                            }`}
+                          >
+                            {tool.status}
+                          </span>
+                        </summary>
+
+                        {tool.output && (
+                          <pre className="max-h-64 overflow-auto border-t border-[#1f2b34] bg-[#0a0e12] p-3 text-xs text-gray-200">
+                            <code>{tool.output}</code>
+                          </pre>
+                        )}
+                      </details>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+
+          {replyLoading && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl rounded-bl-md border border-[#23233a] bg-[#12121a] px-4 py-3 text-sm text-gray-100">
+                <LoadingDots />
+              </div>
+            </div>
+          )}
+
+          {followUpSuggestions.length > 0 && (
+            <div className="mr-auto flex w-full max-w-[92%] flex-wrap gap-2 sm:max-w-[80%]">
+              {followUpSuggestions.map((suggestion, index) => (
+                <button
+                  key={`${suggestion}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    if (!replyLoading && !historyLoading) {
+                      void handleSend(suggestion);
+                    }
+                  }}
+                  disabled={replyLoading || historyLoading}
+                  className="rounded-lg border border-[#2a3642] bg-[#0f141b] px-3 py-2 text-left text-xs text-gray-200 transition-colors hover:border-[#3f596f] hover:bg-[#141b24] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <div ref={endRef} />
+        </div>
+      </div>
+
+      <div className="border-t border-[#1f1f2a] bg-[#0f0f16] px-3 py-2 sm:px-4">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-2 text-xs">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#2f8f5b]/50 bg-[#11271c] px-2.5 py-1 text-[#9ff1c5]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" />
+            {selectedAgent.icon} {selectedAgent.name}
+          </span>
+          <span className="truncate rounded-full border border-[#2f2f3a] bg-[#15151d] px-2.5 py-1 font-mono text-gray-300">
+            {activeModelLabel}
+          </span>
+        </div>
+      </div>
+
+      <ChatInput onSend={handleSend} disabled={replyLoading || historyLoading} />
+    </>
+  );
 
   return (
     <div className="relative flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0b]">
@@ -811,12 +981,18 @@ export default function ChatPage() {
             )}
           </div>
 
-          <AgentGrid
-            agents={orderedAgents}
-            selectedAgentId={selectedAgent.id}
-            onSelect={handleAgentSelect}
-            onConfigure={handleAgentConfigOpen}
-          />
+          {inAgentMode ? (
+            <div className="rounded-2xl border border-[#24242c] bg-[#111118] p-3">
+              <p className="text-xs text-gray-400">Agent mode active. Use the top selector to switch agents.</p>
+            </div>
+          ) : (
+            <AgentGrid
+              agents={orderedAgents}
+              selectedAgentId={selectedAgent.id}
+              onSelect={handleAgentModeEnter}
+              onConfigure={handleAgentConfigOpen}
+            />
+          )}
         </div>
       </aside>
 
@@ -833,33 +1009,50 @@ export default function ChatPage() {
             <div className="flex items-center gap-2 text-sm text-gray-300">
               <span>{selectedAgent.icon}</span>
               <span className="font-medium text-gray-100">{selectedAgent.name}</span>
-              <span className="rounded-full bg-[#173425] px-2 py-0.5 text-xs text-[#9ff1c5]">active</span>
+              <span className="rounded-full bg-[#173425] px-2 py-0.5 text-xs text-[#9ff1c5]">
+                {inAgentMode ? "mode" : "active"}
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-[#26262f] bg-[#101217] px-2 py-1.5">
-            <span className="hidden items-center gap-1 text-[11px] text-gray-500 sm:inline-flex">
-              <span className="h-2 w-2 rounded-full bg-[#ff5f57]" />
-              <span className="h-2 w-2 rounded-full bg-[#febc2e]" />
-              <span className="h-2 w-2 rounded-full bg-[#28c840]" />
-            </span>
-            <select
-              value={activeModelId}
-              onChange={(event) => {
-                const next = event.target.value;
-                setModelSelections((prev) => ({ ...prev, [selectedAgent.id]: next }));
-              }}
-              className="h-8 max-w-[260px] rounded-md border border-[#2c3440] bg-[#0c0f14] px-2 text-xs text-gray-200 focus:border-[#3b82f6] focus:outline-none"
-              aria-label="Select model"
-            >
-              {models.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.provider} · {model.name}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2">
+            {inAgentMode && (
+              <button
+                type="button"
+                onClick={handleExitAgentMode}
+                className="rounded-md border border-[#334155] bg-[#111827] px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-[#475569] hover:text-white"
+              >
+                Back to agents
+              </button>
+            )}
+            <div className="flex items-center gap-2 rounded-xl border border-[#26262f] bg-[#101217] px-2 py-1.5">
+              <span className="hidden items-center gap-1 text-[11px] text-gray-500 sm:inline-flex">
+                <span className="h-2 w-2 rounded-full bg-[#ff5f57]" />
+                <span className="h-2 w-2 rounded-full bg-[#febc2e]" />
+                <span className="h-2 w-2 rounded-full bg-[#28c840]" />
+              </span>
+              <select
+                value={activeModelId}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setModelSelections((prev) => ({ ...prev, [selectedAgent.id]: next }));
+                }}
+                className="h-8 max-w-[260px] rounded-md border border-[#2c3440] bg-[#0c0f14] px-2 text-xs text-gray-200 focus:border-[#3b82f6] focus:outline-none"
+                aria-label="Select model"
+              >
+                {models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.provider} · {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
+
+        {inAgentMode && (
+          <AgentModeSelector agents={orderedAgents} activeAgentId={selectedAgent.id} onSelect={handleAgentModeSwitch} />
+        )}
 
         {wizardAgent && (
           <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
@@ -872,113 +1065,21 @@ export default function ChatPage() {
           </div>
         )}
 
-        {!wizardAgent && (
-          <>
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
-              <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
-                {historyLoading ? (
-                  <p className="text-sm text-gray-400">Loading conversation...</p>
-                ) : !hasChat ? (
-                  <div className="flex flex-col items-center justify-center gap-4 pt-20 text-center">
-                    <span className="text-5xl">{selectedAgent.icon}</span>
-                    <h2 className="text-xl font-bold text-white">{selectedAgent.name}</h2>
-                    <p className="max-w-md text-sm text-gray-400">{selectedAgent.description}</p>
-                    <p className="text-xs text-gray-600">
-                      Pick any of the 8 agents from the grid and start chatting, or use Config to tune this Hand.
-                    </p>
-                  </div>
-                ) : (
-                  messages.map((message, index) => (
-                    <div key={message.id || `${message.role}-${index}-${message.content.slice(0, 20)}`} className="space-y-2">
-                      <ChatMessage role={message.role} content={message.content} />
-
-                      {message.role === "assistant" && message.tools && message.tools.length > 0 && (
-                        <div className="mr-auto w-full max-w-[92%] space-y-2 sm:max-w-[80%]">
-                          {message.tools.map((tool) => (
-                            <details
-                              key={tool.id}
-                              open={tool.status === "running"}
-                              className="overflow-hidden rounded-lg border border-[#24313a] bg-[#0d1217]"
-                            >
-                              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs text-gray-300">
-                                <span className="inline-flex items-center gap-2">
-                                  {tool.status === "running" ? <Spinner /> : <span className="h-2 w-2 rounded-full bg-[#4ade80]" />}
-                                  <span className="font-mono">{tool.name}</span>
-                                </span>
-                                <span
-                                  className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${
-                                    tool.status === "running"
-                                      ? "bg-[#163c2a] text-[#9ff1c5]"
-                                      : tool.status === "error"
-                                        ? "bg-[#3b1a1a] text-[#fca5a5]"
-                                        : "bg-[#122736] text-[#93c5fd]"
-                                  }`}
-                                >
-                                  {tool.status}
-                                </span>
-                              </summary>
-
-                              {tool.output && (
-                                <pre className="max-h-64 overflow-auto border-t border-[#1f2b34] bg-[#0a0e12] p-3 text-xs text-gray-200">
-                                  <code>{tool.output}</code>
-                                </pre>
-                              )}
-                            </details>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-
-                {replyLoading && (
-                  <div className="flex justify-start">
-                    <div className="rounded-2xl rounded-bl-md border border-[#23233a] bg-[#12121a] px-4 py-3 text-sm text-gray-100">
-                      <LoadingDots />
-                    </div>
-                  </div>
-                )}
-
-                {followUpSuggestions.length > 0 && (
-                  <div className="mr-auto flex w-full max-w-[92%] flex-wrap gap-2 sm:max-w-[80%]">
-                    {followUpSuggestions.map((suggestion, index) => (
-                      <button
-                        key={`${suggestion}-${index}`}
-                        type="button"
-                        onClick={() => {
-                          if (!replyLoading && !historyLoading) {
-                            void handleSend(suggestion);
-                          }
-                        }}
-                        disabled={replyLoading || historyLoading}
-                        className="rounded-lg border border-[#2a3642] bg-[#0f141b] px-3 py-2 text-left text-xs text-gray-200 transition-colors hover:border-[#3f596f] hover:bg-[#141b24] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {error && <p className="text-sm text-red-400">{error}</p>}
-                <div ref={endRef} />
-              </div>
-            </div>
-
-            <div className="border-t border-[#1f1f2a] bg-[#0f0f16] px-3 py-2 sm:px-4">
-              <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-2 text-xs">
-                <span className="inline-flex items-center gap-2 rounded-full border border-[#2f8f5b]/50 bg-[#11271c] px-2.5 py-1 text-[#9ff1c5]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" />
-                  {selectedAgent.icon} {selectedAgent.name}
-                </span>
-                <span className="truncate rounded-full border border-[#2f2f3a] bg-[#15151d] px-2.5 py-1 font-mono text-gray-300">
-                  {activeModelLabel}
-                </span>
-              </div>
-            </div>
-
-            <ChatInput onSend={handleSend} disabled={replyLoading || historyLoading} />
-          </>
-        )}
+        {!wizardAgent &&
+          (inAgentMode ? (
+            <AgentModeLayout
+              agentId={selectedAgent.id}
+              chatPanel={
+                <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#1f2733] bg-[#0d1117]">
+                  {chatContent}
+                </div>
+              }
+              sidePanel={modeSidePanel}
+              splitRatio={showSplitLayout ? "1fr 1fr" : "1fr"}
+            />
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col">{chatContent}</div>
+          ))}
       </section>
     </div>
   );
