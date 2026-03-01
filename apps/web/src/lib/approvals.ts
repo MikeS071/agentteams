@@ -24,7 +24,7 @@ const RESOLVED_EVENTS = new Set([
   "hand.approval_resolved",
 ]);
 
-export const HANDS_SSE_EVENT_NAMES = [
+export const AI_AGENT_SSE_EVENT_NAMES = [
   "approval_required",
   "approval.pending",
   "hand.approval_required",

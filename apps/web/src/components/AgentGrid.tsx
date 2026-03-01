@@ -18,7 +18,7 @@ export default function AgentGrid({ agents, selectedAgentId, onSelect, onConfigu
           <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
           <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
           <p className="ml-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-400">
-            OpenFang Hands
+            AI Agents
           </p>
         </div>
         <span className="text-xs text-gray-500">8 agents</span>
@@ -73,7 +73,7 @@ export default function AgentGrid({ agents, selectedAgentId, onSelect, onConfigu
                     {isActive ? "active" : "idle"}
                   </span>
                   <span className="text-[10px] uppercase tracking-wide text-gray-500">
-                    {agent.id === "chat" ? "General" : "Hand"}
+                    {agent.id === "chat" ? "General" : "AI Agent"}
                   </span>
                 </div>
               </div>

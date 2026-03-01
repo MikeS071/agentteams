@@ -1,4 +1,4 @@
-export type HandSummary = {
+export type AgentSummary = {
   id: string;
   name: string;
   description: string;
@@ -26,7 +26,7 @@ export type ConversationMessage = {
   createdAt?: string;
 };
 
-export type HandConversation = {
+export type AgentConversation = {
   id: string;
   title: string;
   createdAt?: string;
@@ -35,7 +35,7 @@ export type HandConversation = {
   messages: ConversationMessage[];
 };
 
-export type HandDetail = HandSummary & {
+export type AgentDetail = AgentSummary & {
   systemPrompt: string;
   enabledTools: string[];
   availableTools: string[];
@@ -160,16 +160,16 @@ function tokensFromMessages(messages: ConversationMessage[]): number {
   return messages.reduce((total, message) => total + message.content.length / 4, 0);
 }
 
-export function normalizeHandsPayload(payload: unknown): HandSummary[] {
+export function normalizeAgentsPayload(payload: unknown): AgentSummary[] {
   const root = toObject(payload);
-  const listRaw = pickFirst(root, ["hands", "items", "data"]);
+  const listRaw = pickFirst(root, ["ai_agents", "agents", "items", "data"]);
   const list = Array.isArray(listRaw) ? listRaw : [];
 
   return list.map((entry, index) => {
     const item = toObject(entry);
     return {
-      id: readString(pickFirst(item, ["id", "hand_id"]), `hand-${index + 1}`),
-      name: readString(pickFirst(item, ["name", "title"]), `Hand ${index + 1}`),
+      id: readString(pickFirst(item, ["id", "agent_id", "hand_id"]), `agent-${index + 1}`),
+      name: readString(pickFirst(item, ["name", "title", "agent_name", "hand_name"]), `AI Agent ${index + 1}`),
       description: readString(pickFirst(item, ["description", "summary"]), ""),
       status: normalizeStatus(readString(pickFirst(item, ["status", "state"]), "unknown")),
       model: readString(pickFirst(item, ["model", "model_name"]), "Unknown model"),
@@ -180,12 +180,12 @@ export function normalizeHandsPayload(payload: unknown): HandSummary[] {
   });
 }
 
-export function normalizeHandDetailPayload(payload: unknown): HandDetail {
+export function normalizeAgentDetailPayload(payload: unknown): AgentDetail {
   const item = toObject(payload);
 
   return {
-    id: readString(pickFirst(item, ["id", "hand_id"]), ""),
-    name: readString(pickFirst(item, ["name", "title"]), "Hand"),
+    id: readString(pickFirst(item, ["id", "agent_id", "hand_id"]), ""),
+    name: readString(pickFirst(item, ["name", "title", "agent_name", "hand_name"]), "AI Agent"),
     description: readString(pickFirst(item, ["description", "summary"]), ""),
     status: normalizeStatus(readString(pickFirst(item, ["status", "state"]), "unknown")),
     model: readString(pickFirst(item, ["model", "model_name"]), "Unknown model"),
@@ -200,7 +200,7 @@ export function normalizeHandDetailPayload(payload: unknown): HandDetail {
   };
 }
 
-export function normalizeHandHistoryPayload(payload: unknown): HandConversation[] {
+export function normalizeAgentHistoryPayload(payload: unknown): AgentConversation[] {
   const root = toObject(payload);
   const listRaw = pickFirst(root, ["history", "conversations", "items", "data"]);
   const list = Array.isArray(listRaw) ? listRaw : [];
@@ -224,7 +224,7 @@ export function normalizeHandHistoryPayload(payload: unknown): HandConversation[
   });
 }
 
-export function buildToolUsageFromHistory(history: HandConversation[]): ToolUsagePoint[] {
+export function buildToolUsageFromHistory(history: AgentConversation[]): ToolUsagePoint[] {
   const counters = new Map<string, { success: number; failure: number }>();
 
   for (const conversation of history) {

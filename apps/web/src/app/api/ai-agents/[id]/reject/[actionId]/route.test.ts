@@ -5,12 +5,12 @@ async function loadRoute() {
   return import('./route')
 }
 
-describe('api/hands/[id]/approve/[actionId]', () => {
+describe('api/ai-agents/[id]/reject/[actionId]', () => {
   it('returns unauthorized without session', async () => {
     const { POST } = await loadRoute()
     setSession(null)
 
-    const res = await POST(nextReq('http://localhost:3000/api/hands/h1/approve/a1', { method: 'POST' }), { params: { id: 'h1', actionId: 'a1' } })
+    const res = await POST(nextReq('http://localhost:3000/api/ai-agents/h1/reject/a1', { method: 'POST' }), { params: { id: 'h1', actionId: 'a1' } })
     expect(res.status).toBe(401)
   })
 
@@ -18,16 +18,16 @@ describe('api/hands/[id]/approve/[actionId]', () => {
     const { POST } = await loadRoute()
     setSession({ tenantId: 'tenant-1' })
 
-    const res = await POST(nextReq('http://localhost:3000/api/hands//approve/', { method: 'POST' }), { params: { id: '', actionId: '' } })
+    const res = await POST(nextReq('http://localhost:3000/api/ai-agents//reject/', { method: 'POST' }), { params: { id: '', actionId: '' } })
     expect(res.status).toBe(400)
   })
 
-  it('approves action', async () => {
+  it('rejects action', async () => {
     const { POST } = await loadRoute()
     setSession({ tenantId: 'tenant-1' })
     global.fetch = vi.fn().mockResolvedValueOnce(new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } })) as typeof fetch
 
-    const res = await POST(nextReq('http://localhost:3000/api/hands/h1/approve/a1', { method: 'POST' }), { params: { id: 'h1', actionId: 'a1' } })
+    const res = await POST(nextReq('http://localhost:3000/api/ai-agents/h1/reject/a1', { method: 'POST' }), { params: { id: 'h1', actionId: 'a1' } })
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ ok: true })
   })

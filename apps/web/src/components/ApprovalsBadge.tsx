@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   APPROVALS_STORAGE_KEY,
-  HANDS_SSE_EVENT_NAMES,
+  AI_AGENT_SSE_EVENT_NAMES,
   hydrateApprovalsFromStorage,
   parseApprovalEvent,
   removeApprovalItem,
@@ -17,7 +17,7 @@ export default function ApprovalsBadge() {
     const initial = hydrateApprovalsFromStorage();
     setCount(initial.length);
 
-    const source = new EventSource("/api/hands/events");
+    const source = new EventSource("/api/ai-agents/events");
     const handleEvent = (event: MessageEvent) => {
       const parsed = parseApprovalEvent(event.data);
       if (!parsed) {
@@ -45,7 +45,7 @@ export default function ApprovalsBadge() {
       });
     };
     source.onmessage = handleEvent;
-    HANDS_SSE_EVENT_NAMES.forEach((eventName) => {
+    AI_AGENT_SSE_EVENT_NAMES.forEach((eventName) => {
       source.addEventListener(eventName, handleEvent as EventListener);
     });
 
@@ -64,7 +64,7 @@ export default function ApprovalsBadge() {
     window.addEventListener("storage", handleStorage);
 
     return () => {
-      HANDS_SSE_EVENT_NAMES.forEach((eventName) => {
+      AI_AGENT_SSE_EVENT_NAMES.forEach((eventName) => {
         source.removeEventListener(eventName, handleEvent as EventListener);
       });
       source.close();

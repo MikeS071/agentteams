@@ -5,7 +5,7 @@ async function loadRoute() {
   return import('./route')
 }
 
-describe('api/hands/events', () => {
+describe('api/ai-agents/events', () => {
   it('returns unauthorized without session', async () => {
     const { GET } = await loadRoute()
     setSession(null)
@@ -32,6 +32,6 @@ describe('api/hands/events', () => {
 
     const res = await GET()
     expect(res.status).toBe(502)
-    await expect(res.json()).resolves.toMatchObject({ error: 'Failed to open hands event stream' })
+    await expect(res.json()).resolves.toMatchObject({ error: 'Failed to open AI agents event stream' })
   })
 })

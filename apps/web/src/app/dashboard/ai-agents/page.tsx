@@ -1,0 +1,185 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { normalizeAgentsPayload, type AgentSummary } from "@/lib/ai-agents";
+
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case "active":
+    case "running":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+    case "paused":
+    case "idle":
+      return "border-amber-500/30 bg-amber-500/10 text-amber-300";
+    case "error":
+    case "failed":
+      return "border-red-500/30 bg-red-500/10 text-red-300";
+    default:
+      return "border-gray-600/50 bg-gray-600/10 text-gray-300";
+  }
+}
+
+const numberFormatter = new Intl.NumberFormat("en-US");
+
+export default function AIAgentsOverviewPage() {
+  const [agents, setAgents] = useState<AgentSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const loadAgents = useCallback(async () => {
+    try {
+      const response = await fetch("/api/ai-agents", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Failed to load agents");
+      }
+      const payload = (await response.json()) as unknown;
+      setAgents(normalizeAgentsPayload(payload));
+      setError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load agents";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAgents();
+  }, [loadAgents]);
+
+  const quickStats = useMemo(() => {
+    return agents.reduce(
+      (acc, agent) => {
+        acc.totalConversations += agent.totalConversations;
+        acc.tokensToday += agent.tokensToday;
+        if (agent.enabled) {
+          acc.enabled += 1;
+        }
+        return acc;
+      },
+      { totalConversations: 0, tokensToday: 0, enabled: 0 }
+    );
+  }, [agents]);
+
+  async function handleToggle(agent: AgentSummary, nextEnabled: boolean) {
+    setSavingId(agent.id);
+    setAgents((prev) => prev.map((item) => (item.id === agent.id ? { ...item, enabled: nextEnabled } : item)));
+
+    try {
+      const response = await fetch(`/api/ai-agents/${agent.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: nextEnabled }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update agent status");
+      }
+    } catch (err) {
+      setAgents((prev) => prev.map((item) => (item.id === agent.id ? { ...item, enabled: agent.enabled } : item)));
+      setError(err instanceof Error ? err.message : "Failed to update agent status");
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  return (
+    <div className="h-full overflow-y-auto bg-[#0a0a0f] px-4 py-5 sm:px-6">
+      <div className="mx-auto w-full max-w-7xl">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-100">AI Agents Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-400">Overview of all AI agents, runtime status, and usage.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              void loadAgents();
+            }}
+            className="rounded-lg border border-[#272739] bg-[#141422] px-3 py-2 text-sm text-gray-200 hover:bg-[#1a1a2b]"
+          >
+            Refresh
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-[#232336] bg-[#101019] p-4">
+            <p className="text-xs uppercase tracking-wide text-gray-500">Total Conversations</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{numberFormatter.format(quickStats.totalConversations)}</p>
+          </div>
+          <div className="rounded-xl border border-[#232336] bg-[#101019] p-4">
+            <p className="text-xs uppercase tracking-wide text-gray-500">Tokens Used Today</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{numberFormatter.format(quickStats.tokensToday)}</p>
+          </div>
+          <div className="rounded-xl border border-[#232336] bg-[#101019] p-4">
+            <p className="text-xs uppercase tracking-wide text-gray-500">Enabled AI Agents</p>
+            <p className="mt-2 text-2xl font-semibold text-white">
+              {quickStats.enabled} / {agents.length || 8}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {loading ? (
+            <div className="col-span-full rounded-xl border border-[#232336] bg-[#101019] p-5 text-sm text-gray-400">
+              Loading agents...
+            </div>
+          ) : agents.length === 0 ? (
+            <div className="col-span-full rounded-xl border border-[#232336] bg-[#101019] p-5 text-sm text-gray-500">
+              No agents available.
+            </div>
+          ) : (
+            agents.map((agent) => (
+              <div key={agent.id} className="rounded-xl border border-[#232336] bg-[#101019] p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-base font-semibold text-white">{agent.name}</p>
+                    <p className="mt-1 line-clamp-2 text-xs text-gray-400">{agent.description || "No description"}</p>
+                  </div>
+                  <span className={`rounded-full border px-2 py-0.5 text-xs capitalize ${statusBadgeClass(agent.status)}`}>
+                    {agent.status}
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-1 text-xs text-gray-300">
+                  <p>
+                    Model: <span className="text-gray-100">{agent.model}</span>
+                  </p>
+                  <p>
+                    Conversations: <span className="text-gray-100">{numberFormatter.format(agent.totalConversations)}</span>
+                  </p>
+                  <p>
+                    Tokens today: <span className="text-gray-100">{numberFormatter.format(agent.tokensToday)}</span>
+                  </p>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-[#222236] pt-3">
+                  <label className="flex items-center gap-2 text-xs text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={agent.enabled}
+                      onChange={(event) => {
+                        void handleToggle(agent, event.currentTarget.checked);
+                      }}
+                      disabled={savingId === agent.id}
+                      className="h-4 w-4 accent-[#6c5ce7]"
+                    />
+                    {agent.enabled ? "Enabled" : "Disabled"}
+                  </label>
+                  <Link href={`/dashboard/ai-agents/${agent.id}`} className="text-xs font-medium text-[#a29bfe] hover:text-[#b9b3ff]">
+                    View details
+                  </Link>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
+      </div>
+    </div>
+  );
+}
