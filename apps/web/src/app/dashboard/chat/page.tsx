@@ -28,7 +28,6 @@ type Message = {
   tools?: ToolExecution[];
 };
 
-type Conversation = { id: string; preview: string; createdAt: string; lastActivityAt: string };
 type AgentConfigMap = Record<string, AgentWizardConfig>;
 type Model = { id: string; name: string; provider: string };
 
@@ -242,10 +241,8 @@ export default function ChatPage() {
   const [modelSelections, setModelSelections] = useState<Record<string, string>>({});
   const [models, setModels] = useState<Model[]>([]);
   const [storageLoaded, setStorageLoaded] = useState(false);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [replyLoading, setReplyLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -280,13 +277,6 @@ export default function ChatPage() {
     return `${found.provider} · ${found.name}`;
   }, [activeModelId, currentAgentConfig.modelPreference, models]);
 
-  const loadConversations = useCallback(async () => {
-    const res = await fetch("/api/chat/conversations", { cache: "no-store" });
-    if (!res.ok) throw new Error("Failed");
-    const data = (await res.json()) as { conversations: Conversation[] };
-    setConversations(data.conversations || []);
-  }, []);
-
   const loadHistory = useCallback(async (id: string) => {
     setHistoryLoading(true);
     setError(null);
@@ -297,17 +287,12 @@ export default function ChatPage() {
       const data = (await res.json()) as { messages: Message[] };
       setMessages(data.messages || []);
       setConversationId(id);
-      setSidebarOpen(false);
     } catch {
       setError("Could not load this conversation.");
     } finally {
       setHistoryLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    void loadConversations().catch(() => {});
-  }, [loadConversations]);
 
   useEffect(() => {
     if (activeConversationId) {
@@ -688,7 +673,6 @@ export default function ChatPage() {
           router.replace(`/dashboard/chat?conversationId=${resolvedConversationId}`);
         }
 
-        await loadConversations();
       } catch {
         updateAssistantMessage(assistantId, () => ({
           id: assistantId,
@@ -705,12 +689,11 @@ export default function ChatPage() {
         setReplyLoading(false);
       }
     },
-    [activeModelId, agentConfigs, conversationId, loadConversations, router, selectedAgent, updateAssistantMessage]
+    [activeModelId, agentConfigs, conversationId, router, selectedAgent, updateAssistantMessage]
   );
 
   function handleAgentSelect(agent: AgentType) {
     setSelectedAgent(agent);
-    setSidebarOpen(false);
   }
 
   function handleAgentConfigOpen(agent: AgentType) {
@@ -730,7 +713,7 @@ export default function ChatPage() {
     setWizardAgent(null);
   }
 
-  function handleNewChat() {
+  function startNewConversation() {
     setConversationId(undefined);
     setMessages([]);
     setError(null);
@@ -758,57 +741,13 @@ export default function ChatPage() {
   }, [lastAssistantMessage, replyLoading]);
 
   return (
-    <div className="relative flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 bg-[#0a0a0b]">
-      {sidebarOpen && (
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-20 bg-black/40 md:hidden"
-          aria-label="Close"
-        />
-      )}
-
-      <aside
-        className={`absolute inset-y-0 left-0 z-30 flex w-[360px] flex-col border-r border-[#1a1a1f] bg-[#0d0d12]/90 backdrop-blur-xl transition-transform md:static md:z-0 md:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between border-b border-[#1f1f25] p-3">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Conversations</h2>
-          <button
-            type="button"
-            onClick={handleNewChat}
-            className="rounded-md bg-[#2563eb] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#1d4ed8]"
-          >
-            + New
-          </button>
+    <div className="flex h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)] min-h-0 flex-col bg-[#0a0a0b] md:flex-row">
+      <aside className="flex w-full min-h-0 flex-col border-b border-[#1a1a1f] bg-[#0d0d12]/90 p-3 backdrop-blur-xl md:w-[360px] md:border-b-0 md:border-r">
+        <div className="mb-3">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Agents</h2>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-          <div className="rounded-2xl border border-[#24242c] bg-[#111118] p-2">
-            {conversations.length === 0 ? (
-              <p className="px-2 py-3 text-xs text-gray-500">No conversations yet</p>
-            ) : (
-              conversations.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => {
-                    setSidebarOpen(false);
-                    router.replace(`/dashboard/chat?conversationId=${c.id}`);
-                  }}
-                  className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                    c.id === conversationId
-                      ? "bg-[#1a1a22] text-gray-100"
-                      : "text-gray-400 hover:bg-[#161620] hover:text-gray-200"
-                  }`}
-                >
-                  <p className="truncate">{c.preview}</p>
-                </button>
-              ))
-            )}
-          </div>
-
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <AgentGrid
             agents={orderedAgents}
             selectedAgentId={selectedAgent.id}
@@ -820,42 +759,42 @@ export default function ChatPage() {
 
       <section className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-[#1a1a1f] px-3 py-2">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen((open) => !open)}
-              className="rounded-md border border-[#2a2a33] px-3 py-1.5 text-sm text-gray-200 md:hidden"
-            >
-              ☰
-            </button>
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span>{selectedAgent.icon}</span>
-              <span className="font-medium text-gray-100">{selectedAgent.name}</span>
-              <span className="rounded-full bg-[#173425] px-2 py-0.5 text-xs text-[#9ff1c5]">active</span>
-            </div>
+          <div className="flex items-center gap-2 text-sm text-gray-300">
+            <span>{selectedAgent.icon}</span>
+            <span className="font-medium text-gray-100">{selectedAgent.name}</span>
+            <span className="rounded-full bg-[#173425] px-2 py-0.5 text-xs text-[#9ff1c5]">active</span>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-[#26262f] bg-[#101217] px-2 py-1.5">
-            <span className="hidden items-center gap-1 text-[11px] text-gray-500 sm:inline-flex">
-              <span className="h-2 w-2 rounded-full bg-[#ff5f57]" />
-              <span className="h-2 w-2 rounded-full bg-[#febc2e]" />
-              <span className="h-2 w-2 rounded-full bg-[#28c840]" />
-            </span>
-            <select
-              value={activeModelId}
-              onChange={(event) => {
-                const next = event.target.value;
-                setModelSelections((prev) => ({ ...prev, [selectedAgent.id]: next }));
-              }}
-              className="h-8 max-w-[260px] rounded-md border border-[#2c3440] bg-[#0c0f14] px-2 text-xs text-gray-200 focus:border-[#3b82f6] focus:outline-none"
-              aria-label="Select model"
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={startNewConversation}
+              className="h-8 rounded-md bg-[#2563eb] px-3 text-xs font-medium text-white hover:bg-[#1d4ed8]"
             >
-              {models.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.provider} · {model.name}
-                </option>
-              ))}
-            </select>
+              + New Chat
+            </button>
+            <div className="flex items-center gap-2 rounded-xl border border-[#26262f] bg-[#101217] px-2 py-1.5">
+              <span className="hidden items-center gap-1 text-[11px] text-gray-500 sm:inline-flex">
+                <span className="h-2 w-2 rounded-full bg-[#ff5f57]" />
+                <span className="h-2 w-2 rounded-full bg-[#febc2e]" />
+                <span className="h-2 w-2 rounded-full bg-[#28c840]" />
+              </span>
+              <select
+                value={activeModelId}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setModelSelections((prev) => ({ ...prev, [selectedAgent.id]: next }));
+                }}
+                className="h-8 max-w-[260px] rounded-md border border-[#2c3440] bg-[#0c0f14] px-2 text-xs text-gray-200 focus:border-[#3b82f6] focus:outline-none"
+                aria-label="Select model"
+              >
+                {models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.provider} · {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
