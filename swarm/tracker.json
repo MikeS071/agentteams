@@ -215,7 +215,117 @@
       "desc": "Update user and technical documentation",
       "sha": "70c988f",
       "startedAt": "2026-03-01T09:02:30Z"
+    },
+    "as-20": {
+      "status": "running",
+      "phase": 5,
+      "depends": [],
+      "branch": "feat/as-20",
+      "desc": "Widen sidebar from w-16 to w-20 with visible text labels",
+      "startedAt": "2026-03-01T10:02:33Z"
+    },
+    "as-21": {
+      "status": "running",
+      "phase": 5,
+      "depends": [],
+      "branch": "feat/as-21",
+      "desc": "Move Configure + New Chat buttons to chat header bar",
+      "startedAt": "2026-03-01T10:02:33Z"
+    },
+    "as-22": {
+      "status": "running",
+      "phase": 5,
+      "depends": [],
+      "branch": "feat/as-22",
+      "desc": "Move model dropdown to chat header, remove from top navbar",
+      "startedAt": "2026-03-01T10:02:34Z"
+    },
+    "as-23": {
+      "status": "todo",
+      "phase": 5,
+      "depends": [],
+      "branch": "feat/as-23",
+      "desc": "Remove model label from chat bottom bar"
+    },
+    "as-24": {
+      "status": "todo",
+      "phase": 5,
+      "depends": [],
+      "branch": "feat/as-24",
+      "desc": "Fix model names to real provider versions (anthropic/claude-opus-4-6 etc)"
+    },
+    "as-25": {
+      "status": "todo",
+      "phase": 6,
+      "depends": [
+        "as-21",
+        "as-22"
+      ],
+      "branch": "feat/as-25",
+      "desc": "Quick Action button framework + modal system"
+    },
+    "as-26": {
+      "status": "todo",
+      "phase": 6,
+      "depends": [
+        "as-25"
+      ],
+      "branch": "feat/as-26",
+      "desc": "Research Assistant quick action — Start New Research modal"
+    },
+    "as-27": {
+      "status": "todo",
+      "phase": 6,
+      "depends": [
+        "as-25"
+      ],
+      "branch": "feat/as-27",
+      "desc": "Coder quick actions — Project + Web Page modals with swarm prompt"
+    },
+    "as-28": {
+      "status": "todo",
+      "phase": 6,
+      "depends": [
+        "as-25"
+      ],
+      "branch": "feat/as-28",
+      "desc": "Social Manager quick actions — Article, Social Post, Reel, Carousel"
+    },
+    "as-29": {
+      "status": "todo",
+      "phase": 6,
+      "depends": [
+        "as-25"
+      ],
+      "branch": "feat/as-29",
+      "desc": "Clip Creator quick action — Youtube Clip modal"
+    },
+    "as-30": {
+      "status": "todo",
+      "phase": 7,
+      "depends": [
+        "as-20",
+        "as-21",
+        "as-22",
+        "as-23",
+        "as-24",
+        "as-26",
+        "as-27",
+        "as-28",
+        "as-29"
+      ],
+      "branch": "feat/as-30",
+      "desc": "Integration merge + build verification"
+    },
+    "as-31": {
+      "status": "todo",
+      "phase": 7,
+      "depends": [
+        "as-30"
+      ],
+      "branch": "feat/as-31",
+      "desc": "E2E tests for quick actions + UI tweaks"
     }
   },
-  "unlocked_phase": 4
+  "unlocked_phase": 5
 }
