@@ -40,6 +40,7 @@ export default function QuickActionBar({ agentId, agentLabel, actions, onSubmit 
 
       <QuickActionModal
         action={activeAction}
+        open={Boolean(activeAction)}
         onClose={() => setActiveActionId(null)}
         onSubmit={onSubmit}
       />

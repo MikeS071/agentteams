@@ -16,7 +16,73 @@ export type QuickAction = {
 };
 
 export const QUICK_ACTIONS: Record<string, QuickAction[]> = {
-  research: [],
+  research: [
+    {
+      id: "start-research",
+      label: "Start New Research",
+      icon: "🔬",
+      fields: [
+        {
+          id: "question",
+          label: "Research Question",
+          placeholder: "e.g. What are the most effective AI agent frameworks for production use in 2026?",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "description",
+          label: "Description / Context",
+          placeholder: "e.g. Focus on frameworks that support multi-agent coordination, tool use, and memory",
+          type: "textarea",
+          required: false,
+        },
+        {
+          id: "depth",
+          label: "Depth",
+          placeholder: "How deep?",
+          type: "select",
+          required: false,
+          options: [
+            "Quick brief (500-800 words)",
+            "Standard report (1500-2500 words)",
+            "Deep dive (3000-5000 words)",
+            "Comprehensive (no word limit)",
+          ],
+        },
+        {
+          id: "audience",
+          label: "Target Audience",
+          placeholder: "e.g. Technical leadership, engineering team",
+          type: "text",
+          required: false,
+        },
+        {
+          id: "sources",
+          label: "Source Priorities",
+          placeholder: "e.g. Prefer peer-reviewed papers over blog posts",
+          type: "text",
+          required: false,
+        },
+      ],
+      promptTemplate: `Research the following topic thoroughly and produce a comprehensive report.
+
+**Research Question:** {{question}}
+{{#description}}
+**Context:** {{description}}
+{{/description}}
+{{#depth}}
+**Depth:** {{depth}}
+{{/depth}}
+{{#audience}}
+**Target Audience:** {{audience}}
+{{/audience}}
+{{#sources}}
+**Source Priorities:** {{sources}}
+{{/sources}}
+
+Follow your research methodology: decompose into sub-questions, search multiple source types, triangulate findings, identify gaps, and synthesize into a structured report with citations.`,
+    },
+  ],
   coder: [
     {
       id: "new-project",
