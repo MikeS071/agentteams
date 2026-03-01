@@ -8,3 +8,4 @@ dist/
 apps/api/api
 apps/web/.next-build/
 .next/
+.-worktrees/
