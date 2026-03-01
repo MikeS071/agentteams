@@ -284,7 +284,47 @@ Platform: {{platform}}
 Write the text for each slide with a hook on slide 1 and CTA on the last slide. Present for my review.`,
     },
   ],
-  clip: [],
+  clip: [
+    {
+      id: "youtube-clip",
+      label: "Youtube Clip",
+      icon: "🎥",
+      fields: [
+        { id: "source", label: "Source Video URL", placeholder: "https://youtube.com/watch?v=...", type: "text", required: true },
+        {
+          id: "topic",
+          label: "Clip Topic / Moment",
+          placeholder: "e.g. The part where they discuss agent memory architectures",
+          type: "textarea",
+          required: true,
+        },
+        {
+          id: "duration",
+          label: "Target Duration",
+          type: "select",
+          required: false,
+          options: ["15 seconds", "30 seconds", "60 seconds", "90 seconds", "Auto (best moment)"],
+          placeholder: "",
+        },
+        {
+          id: "format",
+          label: "Output Format",
+          type: "select",
+          required: false,
+          options: ["MP4 (16:9)", "MP4 (9:16 vertical)", "GIF", "MP4 with captions"],
+          placeholder: "",
+        },
+      ],
+      promptTemplate: `Create a clip from this YouTube video.
+
+Source: {{source}}
+Topic/Moment: {{topic}}
+{{#duration}}Duration: {{duration}}{{/duration}}
+{{#format}}Format: {{format}}{{/format}}
+
+Find the relevant segment, extract it, and prepare the clip. Show me a preview before finalizing.`,
+    },
+  ],
   intel: [],
   chat: [],
 };
