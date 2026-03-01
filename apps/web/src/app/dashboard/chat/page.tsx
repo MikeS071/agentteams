@@ -10,10 +10,12 @@ import ChatInput from "@/components/ChatInput";
 import ChatMessage from "@/components/ChatMessage";
 import IntelPanel from "@/components/IntelPanel";
 import MediaPanel from "@/components/MediaPanel";
+import QuickActionBar from "@/components/QuickActionBar";
 import ResearchPanel from "@/components/ResearchPanel";
 import SocialPanel from "@/components/SocialPanel";
 import SwarmStatus from "@/components/SwarmStatus";
 import { AGENTS, getAgent, type AgentType } from "@/lib/agents";
+import { QUICK_ACTIONS } from "@/lib/quick-actions";
 
 type Role = "user" | "assistant" | "system";
 
@@ -775,6 +777,8 @@ export default function ChatPage() {
     return undefined;
   }, [messages, selectedAgent.id]);
 
+  const quickActions = useMemo(() => QUICK_ACTIONS[selectedAgent.id] ?? [], [selectedAgent.id]);
+
   const chatPanel = (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between border-b border-[#1a1a1f] px-3 py-2">
@@ -875,17 +879,17 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="border-t border-[#1f1f2a] bg-[#0f0f16] px-3 py-2 sm:px-4">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-2 text-xs">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#2f8f5b]/50 bg-[#11271c] px-2.5 py-1 text-[#9ff1c5]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" />
-            {selectedAgent.icon} {selectedAgent.name}
-          </span>
-          <span className="truncate rounded-full border border-[#2f2f3a] bg-[#15151d] px-2.5 py-1 font-mono text-gray-300">
-            {activeModelLabel}
-          </span>
-        </div>
-      </div>
+      <QuickActionBar
+        agentId={selectedAgent.id}
+        agentLabel={selectedAgent.name}
+        actions={quickActions}
+        onSubmit={(prompt) => {
+          if (replyLoading || historyLoading) {
+            return;
+          }
+          void handleSend(prompt);
+        }}
+      />
 
       <ChatInput onSend={handleSend} disabled={replyLoading || historyLoading} />
     </div>
